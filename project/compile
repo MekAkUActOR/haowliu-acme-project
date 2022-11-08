@@ -1,3 +1,18 @@
 #!/bin/bash
 
 echo "Compile your project here"
+pip install cryptography
+pip install click
+pip install dacite
+pip install Django
+pip install dnslib
+pip install dnspython
+pip install Flask
+pip install falcon
+pip install gunicorn
+pip install PyCryptodome
+pip install pycrypto
+pip install pyopenssl
+pip install requests
+pip install setuptools
+pip install tornado
