@@ -18,5 +18,5 @@ def reg_httpcha(token, auth):
 
 
 def cha_http_server():
-    runserver = Thread(target=lambda: server.run(host="0.0.0.0", port=5002, debug=True, threaded=True, use_reloader=False))
+    runserver = Thread(target=lambda: server.run(host="0.0.0.0", port=5002, debug=False, threaded=True))
     runserver.start()

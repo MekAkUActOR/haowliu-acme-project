@@ -9,5 +9,5 @@ def route_get():
 
 
 def cert_https_server(key, cert):
-    runserver = Thread(target=lambda: server.run(host="0.0.0.0", port=5001, threaded=True, debug=True, ssl_context=(cert, key), use_reloader=False))
+    runserver = Thread(target=lambda: server.run(host="0.0.0.0", port=5001, threaded=True, debug=False, ssl_context=(cert, key)))
     runserver.start()

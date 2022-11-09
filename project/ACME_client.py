@@ -45,7 +45,7 @@ class ACME_client():
 
     def generate_keypair(self):
         self.key = ECC.generate(curve="p256")
-        self.sign_alg = DSS.new(self.key, "fips-180-4")
+        self.sign_alg = DSS.new(self.key, "fips-186-3")
 
     def encode_b64(self, data):
         if isinstance(data, str):
@@ -215,7 +215,7 @@ class ACME_client():
             return response.content
 
     def revoke_cert(self, cert):
-        payload = {"certificate":self.encode_b64(cert)}
+        payload = {"certificate": self.encode_b64(cert)}
         jose_payload = self.create_jose_kid(self.revoke_cert_url, payload)
         response = self.jose_session.post(self.revoke_cert_url, json=jose_payload)
         if response.status_code == 200:

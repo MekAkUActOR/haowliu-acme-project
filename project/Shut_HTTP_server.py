@@ -15,5 +15,5 @@ def shutdown():
     return 'Server shutting down...'
 
 def shut_http_server():
-    runserver = Thread(target=lambda: server.run(host="0.0.0.0", port=5003, debug=True, threaded=True, use_reloader=False))
+    runserver = Thread(target=lambda: server.run(host="0.0.0.0", port=5003, debug=False, threaded=True))
     runserver.start()
