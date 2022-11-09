@@ -1,6 +1,11 @@
 #!/bin/bash
 
+DIRECTORY=$(dirname "$0")
+echo "Changing to ${DIRECTORY}"
+cd  "$DIRECTORY" || exit 1
+
 echo "Compile your project here"
+pwd
 pip install -e .
 #pip install cryptography
 #pip install click
