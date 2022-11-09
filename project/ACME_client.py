@@ -99,7 +99,7 @@ class ACME_client():
 
         if jose_request.status_code == 201:
             jose_request_obj = jose_request.json()
-            self.account_kid = jose_request.headers["location"]
+            self.account_kid = jose_request.headers["Location"]
             return jose_request_obj
 
     def create_jose_jwk(self, url, payload):
@@ -197,7 +197,7 @@ class ACME_client():
         jose_request_obj = self.poll_resource_status(order_url, self.starting_success_states, self.starting_failure_states)
         if not jose_request_obj:
             return False
-        payload = {"csr":self.encode_b64(der)}
+        payload = {"csr": self.encode_b64(der)}
         jose_payload = self.create_jose_kid(fin_url, payload)
         response = self.jose_session.post(fin_url, json=jose_payload)
         if response.status_code == 200:
