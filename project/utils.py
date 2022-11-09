@@ -20,12 +20,24 @@ def gen_csr_and_key(domains):
         key_size=2048
     )
     public_key = private_key.public_key()
+    # csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
+    #     x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "ACME_Project"),
+    # ])).add_extension(
+    #     x509.SubjectAlternativeName([x509.DNSName(domain) for domain in domains]),
+    #     critical=False,
+    # ).sign(private_key, hashes.SHA256())
     csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
+        x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "CH"),
+        x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME, "ZH"),
+        x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, "Zurich"),
+        x509.NameAttribute(x509.oid.NameOID.ORGANIZATION_NAME, "ACME_Project"),
         x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "ACME_Project"),
     ])).add_extension(
-        x509.SubjectAlternativeName([x509.DNSName(domain) for domain in domains]),
+        x509.SubjectAlternativeName([x509.DNSName(domain)
+                                     for domain in domains]),
         critical=False,
     ).sign(private_key, hashes.SHA256())
+
     der = csr.public_bytes(serialization.Encoding.DER)
     return private_key, csr, der
 
@@ -39,7 +51,7 @@ def write_cert(key, cert):
     with open(cert_path, "wb") as f:
         f.write(cert)
 
-def https_with_cert(cha_type, dir, record, domain, revoke):
+def obtain_cert(cha_type, dir, record, domain, revoke):
     dns_server = DNS_server()
     cha_http_server()
     for d in domain:
@@ -81,6 +93,10 @@ def https_with_cert(cha_type, dir, record, domain, revoke):
             x509.load_pem_x509_certificate(dl_cert).public_bytes(
                 serialization.Encoding.DER)
         )
+    return key, dl_cert
+
+def https_with_cert(cha_type, dir, record, domain, revoke):
+    key, cert = obtain_cert(cha_type, dir, record, domain, revoke)
     if not key:
         os._exit(0)
     os.system("pkill -f DNS_server.py")
