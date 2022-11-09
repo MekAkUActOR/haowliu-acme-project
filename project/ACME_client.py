@@ -14,10 +14,9 @@ from Cha_HTTP_server import reg_httpcha
 
 
 class ACME_client():
-    def __init__(self, dir, dns_server):
-        self.dir = dir
+    def __init__(self, dirc, dns_server):
+        self.dir = dirc
         self.dns_server = dns_server
-
         self.revoke_cert_url = None
         self.new_nonce_url = None
         self.new_account_url = None
@@ -28,13 +27,17 @@ class ACME_client():
         self.client_session = requests.Session()
         self.jose_session = requests.Session()
 
-        self.starting_success_states = ["ready", "processing", "valid"]
-        self.starting_failure_states = ["invalid"]
-        self.final_success_states = ["valid"]
-        self.final_failure_states = ["ready", "invalid", "pending"]
+        self.starting_success_states, self.starting_failure_states = ["ready", "processing", "valid"], ["invalid"]
+        self.final_success_states, self.final_failure_states = ["valid"], ["ready", "invalid", "pending"]
+
+        # self.starting_success_states = ["ready", "processing", "valid"]
+        # self.starting_failure_states = ["invalid"]
+        # self.final_success_states = ["valid"]
+        # self.final_failure_states = ["ready", "invalid", "pending"]
 
         self.client_session.headers.update({"User-Agent": "ACME_Project"})
         self.client_session.mount('https://', HTTPAdapter(max_retries=0))
+
         self.jose_session.headers.update({"User-Agent": "ACME_Project", "Content-Type": "application/jose+json"})
         self.jose_session.mount('https://', HTTPAdapter(max_retries=0))
         self.generate_keypair()
@@ -56,7 +59,7 @@ class ACME_client():
             self.revoke_cert_url = jose_request_obj["revokeCert"]
             self.new_nonce_url = jose_request_obj["newNonce"]
             self.new_account_url = jose_request_obj["newAccount"]
-            self.new_order_url = jose_request_obj["mewOrder"]
+            self.new_order_url = jose_request_obj["newOrder"]
             return jose_request_obj
 
     def create_jwk_obj(self):
