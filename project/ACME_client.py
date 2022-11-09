@@ -45,7 +45,7 @@ class ACME_client():
 
     def generate_keypair(self):
         self.key = ECC.generate(curve="p256")
-        self.sign_alg = DSS.new(self.key, "fips-186-3")
+        self.sign_alg = DSS.new(self.key, "fips-180-4")
 
     def encode_b64(self, data):
         if isinstance(data, str):
