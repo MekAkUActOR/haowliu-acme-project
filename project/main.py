@@ -27,7 +27,7 @@ def main():
     parser.add_argument("--domain", required=True, action="append")
     parser.add_argument("--revoke", action="store_true")
     args = parser.parse_args()
-    main_th = Thread(target=lambda: shut_http_server.run(host="0.0.0.0", port=5003, debug=True, threaded=True, use_reloader=False))
+    main_th = Thread(target=lambda: shut_http_server.run(host="0.0.0.0", port=5003, debug=False, threaded=True))#, use_reloader=False))
     main_th.start()
     https_th = Thread(target=lambda: https_with_cert(args.cha_type, args.dir, args.record, args.domain, args.revoke))
     https_th.start()
