@@ -11,3 +11,4 @@ pip install dnslib
 pip install requests
 pip install cryptography
 pip install flask
+pip install pycryptodome
