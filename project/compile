@@ -1,24 +1,13 @@
 #!/bin/bash
 
-DIRECTORY=$(dirname "$0")
-echo "Changing to ${DIRECTORY}"
-cd  "$DIRECTORY" || exit 1
+#DIRECTORY=$(dirname "$0")
+#echo "Changing to ${DIRECTORY}"
+#cd  "$DIRECTORY" || exit 1
 
 echo "Compile your project here"
-pwd
-pip install -e .
-#pip install cryptography
-#pip install click
-#pip install dacite
-#pip install Django
-#pip install dnslib
-#pip install dnspython
-#pip install Flask
-#pip install falcon
-#pip install gunicorn
-#pip install PyCryptodome
-#pip install pycrypto
-#pip install pyopenssl
-#pip install requests
-#pip install setuptools
-#pip install tornado
+#pwd
+#pip install -e .
+pip install dnslib
+pip install requests
+pip install cryptography
+pip install flask
