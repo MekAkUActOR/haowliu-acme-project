@@ -5,18 +5,19 @@ from threading import Thread
 
 class DNS_resolver:
     def __init__(self):
-        self.zone = []
+        self.zones = []
 
     def zone_add_A(self, domain, ip):
-        self.zone.append(dd.RR(domain, dd.QTYPE.A, rdata=dd.A(ip), ttl=300))
+        self.zones.append(dd.RR(domain, dd.QTYPE.A, rdata=dd.A(ip), ttl=300))
 
     def zone_add_TXT(self, domain, txt):
-        self.zone.append(dd.RR(domain, dd.QTYPE.TXT, rdata=dd.TXT(txt), ttl=300))
+        self.zones.append(dd.RR(domain, dd.QTYPE.TXT, rdata=dd.TXT(txt), ttl=300))
 
     def resolve(self, request, handler):
         reply = request.reply()
-        for x in self.zone:
-            reply.add_answer(x)
+        for zone in self.zones:
+            reply.add_answer(zone)
+
 
 class DNS_server:
     def __init__(self):
@@ -31,8 +32,8 @@ class DNS_server:
         self.resolver.zone_add_TXT(domain, txt)
 
     def server_run(self):
-        self.server_thread = Thread(target=self.server.start)
-        self.server_thread.start()
+        self.runserver = Thread(target=self.server.start)
+        self.runserver.start()
 
     def server_shut(self):
         self.server.stop()
