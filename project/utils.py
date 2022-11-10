@@ -22,7 +22,7 @@ def b64encode(data):
 
 
 def server_thread(server):
-    server_th = Thread(server.start_server())
+    server_th = Thread(target=server.start_server)
     server_th.start()
     return server_th
 
