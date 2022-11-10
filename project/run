@@ -4,4 +4,7 @@ echo "Changing to ${DIRECTORY}"
 cd  "$DIRECTORY" || exit 1
 
 echo "Run your project here."
-python3 main.py "$@"
+echo "I can now push to the repo"
+echo "Set local git config"
+
+REQUESTS_CA_BUNDLE=pebble.minica.pem python3 main.py $@

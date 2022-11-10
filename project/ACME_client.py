@@ -64,11 +64,11 @@ class ACME_client():
 
     def create_jwk_obj(self):
         return {
-            "crv"   :   "P-256",
-            "kid"   :   "1",
-            "kty"   :   "EC",
-            "x"     :   self.encode_b64(self.key.pointQ.x.to_bytes()),
-            "y"     :   self.encode_b64(self.key.pointQ.y.to_bytes()),
+            "crv":  "P-256",
+            "kid":  "1",
+            "kty":  "EC",
+            "x":    self.encode_b64(self.key.pointQ.x.to_bytes()),
+            "y":    self.encode_b64(self.key.pointQ.y.to_bytes()),
         }
 
     def get_nonce(self):
