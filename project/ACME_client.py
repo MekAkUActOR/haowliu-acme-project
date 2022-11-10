@@ -10,7 +10,7 @@ from Crypto.PublicKey import ECC
 from Crypto.Signature import DSS
 from Crypto.Hash import SHA256
 
-from Cha_HTTP_server import reg_httpcha
+# from Cha_HTTP_server import reg_httpcha
 
 
 class ACME_client():
@@ -154,7 +154,7 @@ class ACME_client():
             jose_request_obj = response.json()
             return jose_request_obj, response.headers["Location"]
 
-    def auth_cert(self, auth_url, auth_scheme):
+    def auth_cert(self, auth_url, auth_scheme, cha_server):
         payload = ""
         jose_payload = self.create_jose_kid(auth_url, payload)
         request = self.jose_session.post(auth_url, json=jose_payload)
@@ -167,7 +167,7 @@ class ACME_client():
                     self.dns_server.zone_add_TXT("_acme-challenge.{}".format(jose_request_obj["identifier"]["value"]), key_auth)
                     return cha
                 elif auth_scheme == "http01" and cha["type"] == "http-01":
-                    reg_httpcha(cha["token"], key_auth)
+                    cha_server.reg_cha(cha["token"], key_auth)
                     return cha
 
     def vali_cert(self, vali_url):
