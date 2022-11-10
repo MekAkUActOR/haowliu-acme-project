@@ -17,13 +17,14 @@ class DNS_resolver:
         reply = request.reply()
         for zone in self.zones:
             reply.add_answer(zone)
+
         return reply
 
 
 class DNS_server:
     def __init__(self):
         self.resolver = DNS_resolver()
-        self.logger = ds.DNSLogger(prefix=False)
+        self.logger = ds.DNSLogger("request,reply,truncated,error", False)
         self.server = ds.DNSServer(self.resolver, port=10053, logger=self.logger)
 
     def zone_add_A(self, domain, ip):
@@ -32,10 +33,9 @@ class DNS_server:
     def zone_add_TXT(self, domain, txt):
         self.resolver.zone_add_TXT(domain, txt)
 
-    def start_server(self):
-        self.server.start_thread()
-        # self.runserver = Thread(target=self.server.start)
-        # self.runserver.start()
+    def server_run(self):
+        self.runserver = Thread(target=self.server.start)
+        self.runserver.start()
 
-    def stop_server(self):
-        self.server.server.server_close()
+    def server_shut(self):
+        self.server.stop()
