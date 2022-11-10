@@ -1,5 +1,7 @@
 import os
-import flask
+from flask import request
+from threading import Thread
+import base64
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -7,9 +9,22 @@ from cryptography import x509
 
 from ACME_client import ACME_client
 from DNS_server import DNS_server
-from Cha_HTTP_server import cha_http_server
-from Cert_HTTPS_server import cert_https_server
+from Cha_HTTP_server import Cha_HTTP_server
+from Cert_HTTPS_server import Cert_HTTPS_server
 # from Shut_HTTP_server import shut_http_server
+
+
+def b64encode(data):
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    b64d = base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+    return b64d
+
+
+def server_thread(server):
+    server_th = Thread(target=server.start_server())
+    server_th.start()
+    return server_th
 
 
 def gen_csr_and_key(domains):
@@ -18,23 +33,23 @@ def gen_csr_and_key(domains):
         key_size=2048
     )
     public_key = private_key.public_key()
-    # csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
-    #     x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "haowliu-acme-project"),
-    # ])).add_extension(
-    #     x509.SubjectAlternativeName([x509.DNSName(domain) for domain in domains]),
-    #     critical=False,
-    # ).sign(private_key, hashes.SHA256())
     csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
-        x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "CH"),
-        x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME, "ZH"),
-        x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, "Zurich"),
-        x509.NameAttribute(x509.oid.NameOID.ORGANIZATION_NAME, "haowliu-acme-project"),
         x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "haowliu-acme-project"),
     ])).add_extension(
-        x509.SubjectAlternativeName([x509.DNSName(domain)
-                                     for domain in domains]),
+        x509.SubjectAlternativeName([x509.DNSName(domain) for domain in domains]),
         critical=False,
     ).sign(private_key, hashes.SHA256())
+    # csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
+    #     x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "CH"),
+    #     x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME, "ZH"),
+    #     x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, "Zurich"),
+    #     x509.NameAttribute(x509.oid.NameOID.ORGANIZATION_NAME, "haowliu-acme-project"),
+    #     x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "haowliu-acme-project"),
+    # ])).add_extension(
+    #     x509.SubjectAlternativeName([x509.DNSName(domain)
+    #                                  for domain in domains]),
+    #     critical=False,
+    # ).sign(private_key, hashes.SHA256())
 
     der = csr.public_bytes(serialization.Encoding.DER)
     return private_key, csr, der
@@ -53,10 +68,11 @@ def write_cert(key, cert):
 
 def obtain_cert(cha_type, dirc, record, domain, revoke):
     dns_server = DNS_server()
-    cha_http_server()
+    cha_http_server = Cha_HTTP_server()
+    cha_th = server_thread(cha_http_server)
     for d in domain:
         dns_server.zone_add_A(d, record)
-    dns_server.server_run()
+    dns_server.start_server()
     acme_client = ACME_client(dirc, dns_server)
     if not acme_client:
         return False
@@ -72,7 +88,7 @@ def obtain_cert(cha_type, dirc, record, domain, revoke):
     vali_urls = []
     fin_url = cert_order["finalize"]
     for auth in cert_order["authorizations"]:
-        cert_auth = acme_client.auth_cert(auth, cha_type)
+        cert_auth = acme_client.auth_cert(auth, cha_type, cha_http_server)
         if not cert_auth:
             return False
         vali_urls.append(cert_auth["url"])
@@ -100,5 +116,13 @@ def https_with_cert(cha_type, dirc, record, domain, revoke):
     wrap = obtain_cert(cha_type, dirc, record, domain, revoke)
     if not wrap:
         os._exit(0)
-    os.system("pkill -f DNS_server.py")
-    cert_https_server("privatekey.pem", "certificate.pem")
+    cert_https_server = Cert_HTTPS_server()
+    https_th = Thread(target=lambda : cert_https_server.start_server("privatekey.pem", "certificate.pem"))
+    https_th.start()
+
+
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
