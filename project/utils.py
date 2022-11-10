@@ -21,8 +21,8 @@ def b64encode(data):
     return b64d
 
 
-def server_thread(server):
-    server_th = Thread(target=server.start_server)
+def server_thread(server, args):
+    server_th = Thread(target=server.start_server, args=args)
     server_th.start()
     return server_th
 
@@ -104,7 +104,6 @@ def https_with_cert(cha_type, dir, record, domain, revoke):
     wrap = obtain_cert(cha_type, dir, record, domain, revoke)
     if not wrap:
         os._exit(0)
-    os.system("pkill -f DNS_server.py")
     cert_https_server = Cert_HTTPS_server()
     https_th = Thread(target=lambda: cert_https_server.start_server("privatekey.pem", "certificate.pem"))
     https_th.start()
