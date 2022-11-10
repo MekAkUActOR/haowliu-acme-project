@@ -40,27 +40,6 @@ def gen_csr_and_key(domains):
     return private_key, csr, der
 
 
-def write_cert(key, cert):
-    with open("privatekey.pem", "wb") as f:
-        f.write(key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        ))
-    with open("certificate.pem", "wb") as f:
-        f.write(cert)
-
-
-# def obtain_cert(cha_type, dir, record, domain, revoke):
-    # dns_server = DNS_server()
-    # cha_http_server = Cha_HTTP_server()
-    # cha_th = server_thread(cha_http_server, args=("0.0.0.0", 5002))
-    # for d in domain:
-    #     dns_server.zone_add_A(d, record)
-    # dns_server.server_run()
-    # acme_client = ACME_client(dir, dns_server)
-    # if not acme_client:
-    #     return False
 def obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke):
     directo = acme_client.get_dir()
     if not directo:
@@ -89,20 +68,22 @@ def obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke):
     dl_cert = acme_client.dl_cert(cert_url)
     if not dl_cert:
         return False
-    write_cert(key, dl_cert)
+
+    with open("privatekey.pem", "wb") as f:
+        f.write(key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+    with open("certificate.pem", "wb") as f:
+        f.write(dl_cert)
+
     if revoke:
         acme_client.revoke_cert(
             x509.load_pem_x509_certificate(dl_cert).public_bytes(
                 serialization.Encoding.DER)
         )
     return key, dl_cert
-
-def https_with_cert(acme_client, cha_http_server, cha_type, domain, revoke):
-    wrap = obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke)
-    if not wrap:
-        os._exit(0)
-    cert_https_server = Cert_HTTPS_server()
-    https_th = server_thread(cert_https_server, args=("0.0.0.0", 5001, "privatekey.pem", "certificate.pem"))
 
 
 def shutdown_server():
