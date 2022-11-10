@@ -35,10 +35,10 @@ class ACME_client():
         # self.final_success_states = ["valid"]
         # self.final_failure_states = ["ready", "invalid", "pending"]
 
-        self.client_session.headers.update({"User-Agent": "ACME_Project"})
+        self.client_session.headers.update({"User-Agent": "haowliu-acme-project"})
         self.client_session.mount('https://', HTTPAdapter(max_retries=0))
 
-        self.jose_session.headers.update({"User-Agent": "ACME_Project", "Content-Type": "application/jose+json"})
+        self.jose_session.headers.update({"User-Agent": "haowliu-acme-project", "Content-Type": "application/jose+json"})
         self.jose_session.mount('https://', HTTPAdapter(max_retries=0))
         self.generate_keypair()
         print("Client keypair generated")

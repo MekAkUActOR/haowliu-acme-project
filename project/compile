@@ -1,8 +1,11 @@
 #!/bin/bash
 
+
 echo "Compile your project here"
-pip3 install dnslib
-pip3 install requests
-pip3 install cryptography
-pip3 install flask
-pip3 install pycryptodome
+#pwd
+#pip install -e .
+pip install requests
+pip install dnslib
+pip install flask
+pip install cryptography
+pip install pycryptodome

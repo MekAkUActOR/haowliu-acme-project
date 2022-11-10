@@ -9,7 +9,6 @@ from ACME_client import ACME_client
 from DNS_server import DNS_server
 from Cha_HTTP_server import cha_http_server
 from Cert_HTTPS_server import cert_https_server
-
 # from Shut_HTTP_server import shut_http_server
 
 key_path = Path(__file__).parent.absolute() / "key.pem"
@@ -22,23 +21,23 @@ def gen_csr_and_key(domains):
         key_size=2048
     )
     public_key = private_key.public_key()
-    csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
-        x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "ACME_Project"),
-    ])).add_extension(
-        x509.SubjectAlternativeName([x509.DNSName(domain) for domain in domains]),
-        critical=False,
-    ).sign(private_key, hashes.SHA256())
     # csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
-    #     x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "CH"),
-    #     x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME, "ZH"),
-    #     x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, "Zurich"),
-    #     x509.NameAttribute(x509.oid.NameOID.ORGANIZATION_NAME, "ACME_Project"),
-    #     x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "ACME_Project"),
+    #     x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "haowliu-acme-project"),
     # ])).add_extension(
-    #     x509.SubjectAlternativeName([x509.DNSName(domain)
-    #                                  for domain in domains]),
+    #     x509.SubjectAlternativeName([x509.DNSName(domain) for domain in domains]),
     #     critical=False,
     # ).sign(private_key, hashes.SHA256())
+    csr = x509.CertificateSigningRequestBuilder().subject_name(x509.Name([
+        x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "CH"),
+        x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME, "ZH"),
+        x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, "Zurich"),
+        x509.NameAttribute(x509.oid.NameOID.ORGANIZATION_NAME, "haowliu-acme-project"),
+        x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, "haowliu-acme-project"),
+    ])).add_extension(
+        x509.SubjectAlternativeName([x509.DNSName(domain)
+                                     for domain in domains]),
+        critical=False,
+    ).sign(private_key, hashes.SHA256())
 
     der = csr.public_bytes(serialization.Encoding.DER)
     return private_key, csr, der
