@@ -9,7 +9,7 @@ from ACME_client import ACME_client
 from DNS_server import DNS_server
 from Cha_HTTP_server import cha_http_server
 from Cert_HTTPS_server import cert_https_server
-from Shut_HTTP_server import shut_http_server
+# from Shut_HTTP_server import shut_http_server
 
 key_path = Path(__file__).parent.absolute()/ "key.pem"
 cert_path = Path(__file__).parent.absolute()/ "cert.pem"
