@@ -11,7 +11,6 @@ from ACME_client import ACME_client
 from DNS_server import DNS_server
 from Cha_HTTP_server import Cha_HTTP_server
 from Cert_HTTPS_server import Cert_HTTPS_server
-# from Shut_HTTP_server import shut_http_server
 
 
 def b64encode(data):
@@ -55,16 +54,17 @@ def write_cert(key, cert):
         f.write(cert)
 
 
-def obtain_cert(cha_type, dir, record, domain, revoke):
-    dns_server = DNS_server()
-    cha_http_server = Cha_HTTP_server()
-    cha_th = server_thread(cha_http_server, args=("0.0.0.0", 5002))
-    for d in domain:
-        dns_server.zone_add_A(d, record)
-    dns_server.server_run()
-    acme_client = ACME_client(dir, dns_server)
-    if not acme_client:
-        return False
+# def obtain_cert(cha_type, dir, record, domain, revoke):
+    # dns_server = DNS_server()
+    # cha_http_server = Cha_HTTP_server()
+    # cha_th = server_thread(cha_http_server, args=("0.0.0.0", 5002))
+    # for d in domain:
+    #     dns_server.zone_add_A(d, record)
+    # dns_server.server_run()
+    # acme_client = ACME_client(dir, dns_server)
+    # if not acme_client:
+    #     return False
+def obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke):
     directo = acme_client.get_dir()
     if not directo:
         return False
@@ -100,8 +100,8 @@ def obtain_cert(cha_type, dir, record, domain, revoke):
         )
     return key, dl_cert
 
-def https_with_cert(cha_type, dir, record, domain, revoke):
-    wrap = obtain_cert(cha_type, dir, record, domain, revoke)
+def https_with_cert(acme_client, cha_http_server, cha_type, domain, revoke):
+    wrap = obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke)
     if not wrap:
         os._exit(0)
     cert_https_server = Cert_HTTPS_server()
