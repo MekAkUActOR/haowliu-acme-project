@@ -100,8 +100,8 @@ def obtain_cert(cha_type, dirc, record, domain, revoke):
 
 
 def https_with_cert(cha_type, dirc, record, domain, revoke):
-    key, cert = obtain_cert(cha_type, dirc, record, domain, revoke)
-    if not key:
+    wrap = obtain_cert(cha_type, dirc, record, domain, revoke)
+    if not wrap:
         os._exit(0)
     os.system("pkill -f DNS_server.py")
     cert_https_server(key_path, cert_path)
