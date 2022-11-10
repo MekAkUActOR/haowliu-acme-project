@@ -17,6 +17,7 @@ class DNS_resolver:
         reply = request.reply()
         for zone in self.zones:
             reply.add_answer(zone)
+        return reply
 
 
 class DNS_server:

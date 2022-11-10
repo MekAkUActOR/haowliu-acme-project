@@ -1,6 +1,6 @@
 import base64
 import json
-import datetime
+from datetime import datetime, timedelta, timezone
 import time
 
 import requests
@@ -142,9 +142,9 @@ class ACME_client():
             "signature" :   self.encode_b64(signature),
         }
 
-    def issue_cert(self, domains, begin=datetime.datetime.now(datetime.timezone.utc), duration=datetime.timedelta(days=365)):
+    def issue_cert(self, domains, begin=datetime.now(timezone.utc), duration=timedelta(days=365)):
         payload = {
-            "identifiers"   :   [{"type":"dns","value":domain} for domain in domains],
+            "identifiers"   :   [{"type": "dns", "value": domain} for domain in domains],
             "notBefore"     :   begin.isoformat(),
             "notAfter"      :   (begin + duration).isoformat(),
         }

@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+import flask
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -10,9 +10,6 @@ from DNS_server import DNS_server
 from Cha_HTTP_server import cha_http_server
 from Cert_HTTPS_server import cert_https_server
 # from Shut_HTTP_server import shut_http_server
-
-key_path = Path(__file__).parent.absolute() / "key.pem"
-cert_path = Path(__file__).parent.absolute() / "cert.pem"
 
 
 def gen_csr_and_key(domains):
@@ -44,13 +41,13 @@ def gen_csr_and_key(domains):
 
 
 def write_cert(key, cert):
-    with open(key_path, "wb") as f:
+    with open("privatekey.pem", "wb") as f:
         f.write(key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()
         ))
-    with open(cert_path, "wb") as f:
+    with open("certificate.pem", "wb") as f:
         f.write(cert)
 
 
@@ -104,4 +101,4 @@ def https_with_cert(cha_type, dirc, record, domain, revoke):
     if not wrap:
         os._exit(0)
     os.system("pkill -f DNS_server.py")
-    cert_https_server(key_path, cert_path)
+    cert_https_server("privatekey.pem", "certificate.pem")
