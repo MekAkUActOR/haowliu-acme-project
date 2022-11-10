@@ -13,11 +13,11 @@ class DNS_resolver:
     def zone_add_TXT(self, domain, txt):
         self.zones.append(dd.RR(domain, dd.QTYPE.TXT, rdata=dd.TXT(txt), ttl=300))
 
-    # def resolve(self, request, handler):
-    #     reply = request.reply()
-    #     for zone in self.zones:
-    #         reply.add_answer(zone)
-    #     return reply
+    def resolve(self, request):
+        reply = request.reply()
+        for zone in self.zones:
+            reply.add_answer(zone)
+        return reply
 
 
 class DNS_server:
