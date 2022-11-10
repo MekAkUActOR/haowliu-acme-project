@@ -5,6 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography import x509
+from Crypto.Hash import SHA256
 from flask import request
 
 
@@ -13,6 +14,12 @@ def b64encode(data):
         data = data.encode('utf-8')
     b64d = base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
     return b64d
+
+
+def hash(data, encoding):
+    encode = str.encode(data, encoding=encoding)
+    hdata = SHA256.new(encode)
+    return hdata
 
 
 def server_thread(server, args):

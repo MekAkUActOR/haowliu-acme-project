@@ -6,9 +6,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from Crypto.PublicKey import ECC
 from Crypto.Signature import DSS
-from Crypto.Hash import SHA256
 
-from utils import b64encode
+from utils import b64encode, hash
 
 
 class ACME_client():
@@ -45,15 +44,6 @@ class ACME_client():
             self.new_order_url = jose_request_obj["newOrder"]
             return jose_request_obj
 
-    def create_jwk_obj(self):
-        return {
-            "crv"   :   "P-256",
-            "kid"   :   "1",
-            "kty"   :   "EC",
-            "x"     :   b64encode(self.key.pointQ.x.to_bytes()),
-            "y"     :   b64encode(self.key.pointQ.y.to_bytes()),
-        }
-
     def get_nonce(self):
         if self.new_nonce_url == None:
             return
@@ -69,7 +59,7 @@ class ACME_client():
             "x"     :   b64encode(self.key.pointQ.x.to_bytes()),
             "y"     :   b64encode(self.key.pointQ.y.to_bytes()),
         }
-        hash_value = b64encode(SHA256.new(str.encode(json.dumps(key, separators=(',',':')), encoding="utf-8")).digest())
+        hash_value = b64encode(hash(json.dumps(key, separators=(',',':')), "utf-8").digest())
         key_auth = "{}.{}".format(token, hash_value)
         return key_auth
 
@@ -86,15 +76,20 @@ class ACME_client():
             return jose_request_obj
 
     def create_jose_jwk(self, url, payload):
-        protected = {
-            "alg"   :   "ES256",
-            "jwk"   :   self.create_jwk_obj(),
-            "nonce" :   self.get_nonce(),
-            "url"   :   url,
+        protected = {}
+        protected["alg"] = "ES256"
+        protected["jwk"] = {
+            "crv"   :   "P-256",
+            "kty"   :   "EC",
+            "x"     :   b64encode(self.key.pointQ.x.to_bytes()),
+            "y"     :   b64encode(self.key.pointQ.y.to_bytes()),
         }
+        protected["nonce"] = self.get_nonce()
+        protected["url"] = url
+
         encoded_header = b64encode(json.dumps(protected))
         encoded_payload = b64encode(json.dumps(payload))
-        hash_value = SHA256.new(str.encode("{}.{}".format(encoded_header, encoded_payload), encoding="ascii"))
+        hash_value = hash("{}.{}".format(encoded_header, encoded_payload), "ascii")
         signature = self.sign_alg.sign(hash_value)
         jose_obj = {
             "protected" :   encoded_header,
@@ -114,10 +109,10 @@ class ACME_client():
 
         if payload == "":
             encoded_payload = ""
-            hash_value = SHA256.new(str.encode("{}.".format(encoded_header), encoding="ascii"))
+            hash_value = hash("{}.".format(encoded_header), "ascii")
         else:
             encoded_payload = b64encode(json.dumps(payload))
-            hash_value = SHA256.new(str.encode("{}.{}".format(encoded_header, encoded_payload), encoding="ascii"))
+            hash_value = hash("{}.{}".format(encoded_header, encoded_payload), "ascii")
         signature = self.sign_alg.sign(hash_value)
         return {
             "protected" :   encoded_header,
@@ -146,7 +141,7 @@ class ACME_client():
             for cha in jose_request_obj["challenges"]:
                 key_auth = self.create_key_auth((cha["token"]))
                 if auth_scheme == "dns01" and cha["type"] == "dns-01":
-                    key_auth = b64encode(SHA256.new(str.encode(key_auth, encoding="ascii")).digest())
+                    key_auth = b64encode(hash(key_auth, "ascii").digest())
                     self.dns_server.update_resolver("_acme-challenge.{}".format(jose_request_obj["identifier"]["value"]), key_auth, "TXT")
                     return cha
                 elif auth_scheme == "http01" and cha["type"] == "http-01":
