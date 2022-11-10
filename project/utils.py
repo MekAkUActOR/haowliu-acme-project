@@ -58,7 +58,7 @@ def write_cert(key, cert):
 def obtain_cert(cha_type, dir, record, domain, revoke):
     dns_server = DNS_server()
     cha_http_server = Cha_HTTP_server()
-    cha_th = server_thread(cha_http_server)
+    cha_th = server_thread(cha_http_server, None)
     for d in domain:
         dns_server.zone_add_A(d, record)
     dns_server.server_run()
@@ -105,8 +105,7 @@ def https_with_cert(cha_type, dir, record, domain, revoke):
     if not wrap:
         os._exit(0)
     cert_https_server = Cert_HTTPS_server()
-    https_th = Thread(target=lambda: cert_https_server.start_server("privatekey.pem", "certificate.pem"))
-    https_th.start()
+    https_th = server_thread(cert_https_server, args=("privatekey.pem", "certificate.pem"))
 
 
 def shutdown_server():
