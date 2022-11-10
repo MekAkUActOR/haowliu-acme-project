@@ -6,12 +6,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography import x509
-#
-# from ACME_client import ACME_client
-# from DNS_server import DNS_server
-# from Cha_HTTP_server import Cha_HTTP_server
-# from Cert_HTTPS_server import Cert_HTTPS_server
-# # from Shut_HTTP_server import shut_http_server
+
+from ACME_client import ACME_client
+from DNS_server import DNS_server
+from Cha_HTTP_server import Cha_HTTP_server
+from Cert_HTTPS_server import Cert_HTTPS_server
+# from Shut_HTTP_server import shut_http_server
 
 
 def b64encode(data):
@@ -19,12 +19,6 @@ def b64encode(data):
         data = data.encode('utf-8')
     b64d = base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
     return b64d
-
-
-def server_thread(server):
-    server_th = Thread(target=server.start_server())
-    server_th.start()
-    return server_th
 
 
 def gen_csr_and_key(domains):
@@ -66,59 +60,58 @@ def write_cert(key, cert):
         f.write(cert)
 
 
-# def obtain_cert(cha_type, dirc, record, domain, revoke):
-#     dns_server = DNS_server()
-#     cha_http_server = Cha_HTTP_server()
-#     cha_th = server_thread(cha_http_server)
-#     for d in domain:
-#         dns_server.zone_add_A(d, record)
-#     dns_server.start_server()
-#     acme_client = ACME_client(dirc, dns_server)
-#     if not acme_client:
-#         return False
-#     directo = acme_client.get_dir()
-#     if not directo:
-#         return False
-#     account = acme_client.create_account()
-#     if not account:
-#         return False
-#     cert_order, order_url = acme_client.issue_cert(domain)
-#     if not cert_order:
-#         return False
-#     vali_urls = []
-#     fin_url = cert_order["finalize"]
-#     for auth in cert_order["authorizations"]:
-#         cert_auth = acme_client.auth_cert(auth, cha_type, cha_http_server)
-#         if not cert_auth:
-#             return False
-#         vali_urls.append(cert_auth["url"])
-#     for url in vali_urls:
-#         cert_valid = acme_client.vali_cert(url)
-#         if not cert_valid:
-#             return False
-#     key, csr, der = gen_csr_and_key(domain)
-#     cert_url = acme_client.fin_cert(order_url, fin_url, der)
-#     if not cert_url:
-#         return False
-#     dl_cert = acme_client.dl_cert(cert_url)
-#     if not dl_cert:
-#         return False
-#     write_cert(key, dl_cert)
-#     if revoke:
-#         acme_client.revoke_cert(
-#             x509.load_pem_x509_certificate(dl_cert).public_bytes(
-#                 serialization.Encoding.DER)
-#         )
-#     return key, dl_cert
-#
-#
-# def https_with_cert(cha_type, dirc, record, domain, revoke):
-#     wrap = obtain_cert(cha_type, dirc, record, domain, revoke)
-#     if not wrap:
-#         os._exit(0)
-#     cert_https_server = Cert_HTTPS_server()
-#     https_th = Thread(target=lambda : cert_https_server.start_server("privatekey.pem", "certificate.pem"))
-#     https_th.start()
+def obtain_cert(cha_type, dirc, record, domain, revoke):
+    dns_server = DNS_server()
+    cha_http_server = Cha_HTTP_server()
+    for d in domain:
+        dns_server.zone_add_A(d, record)
+    dns_server.start_server()
+    acme_client = ACME_client(dirc, dns_server)
+    if not acme_client:
+        return False
+    directo = acme_client.get_dir()
+    if not directo:
+        return False
+    account = acme_client.create_account()
+    if not account:
+        return False
+    cert_order, order_url = acme_client.issue_cert(domain)
+    if not cert_order:
+        return False
+    vali_urls = []
+    fin_url = cert_order["finalize"]
+    for auth in cert_order["authorizations"]:
+        cert_auth = acme_client.auth_cert(auth, cha_type, cha_http_server)
+        if not cert_auth:
+            return False
+        vali_urls.append(cert_auth["url"])
+    for url in vali_urls:
+        cert_valid = acme_client.vali_cert(url)
+        if not cert_valid:
+            return False
+    key, csr, der = gen_csr_and_key(domain)
+    cert_url = acme_client.fin_cert(order_url, fin_url, der)
+    if not cert_url:
+        return False
+    dl_cert = acme_client.dl_cert(cert_url)
+    if not dl_cert:
+        return False
+    write_cert(key, dl_cert)
+    if revoke:
+        acme_client.revoke_cert(
+            x509.load_pem_x509_certificate(dl_cert).public_bytes(
+                serialization.Encoding.DER)
+        )
+    return key, dl_cert
+
+
+def https_with_cert(cha_type, dirc, record, domain, revoke):
+    wrap = obtain_cert(cha_type, dirc, record, domain, revoke)
+    if not wrap:
+        os._exit(0)
+    cert_https_server = Cert_HTTPS_server()
+    https_th = Thread(target=lambda : cert_https_server.start_server("privatekey.pem", "certificate.pem"))
+    https_th.start()
 
 
 def shutdown_server():

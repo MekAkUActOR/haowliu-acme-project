@@ -1,15 +1,22 @@
 import json
 from datetime import datetime, timedelta, timezone
 import time
-
+import base64
 import requests
 from requests.adapters import HTTPAdapter
 from Crypto.PublicKey import ECC
 from Crypto.Signature import DSS
 from Crypto.Hash import SHA256
 
-from utils import b64encode
+# from utils import b64encode
 # from Cha_HTTP_server import reg_httpcha
+
+
+def b64encode(data):
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    b64d = base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+    return b64d
 
 
 class ACME_client():
