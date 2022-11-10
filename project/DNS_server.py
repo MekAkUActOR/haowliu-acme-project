@@ -23,8 +23,8 @@ class DNS_resolver:
 class DNS_server:
     def __init__(self):
         self.resolver = DNS_resolver()
-        self.logger = ds.DNSLogger("request,reply,truncated,error", False)
-        self.server = ds.DNSServer(self.resolver, port=10053, logger=self.logger)
+        self.logger = ds.DNSLogger(prefix=False)
+        self.server = ds.DNSServer(self.resolver, port=10053,  address="0.0.0.0", logger=self.logger)
 
     def zone_add_A(self, domain, ip):
         self.resolver.zone_add_A(domain, ip)
@@ -32,9 +32,10 @@ class DNS_server:
     def zone_add_TXT(self, domain, txt):
         self.resolver.zone_add_TXT(domain, txt)
 
-    def server_run(self):
-        self.runserver = Thread(target=self.server.start)
-        self.runserver.start()
+    def start_server(self):
+        # self.runserver = Thread(target=self.server.start)
+        # self.runserver.start()
+        self.server.start_thread()
 
-    def server_shut(self):
-        self.server.stop()
+    def stop_server(self):
+        self.server.server.server_close()

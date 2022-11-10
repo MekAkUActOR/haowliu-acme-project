@@ -7,8 +7,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography import x509
 from flask import request
 
-from Cert_HTTPS_server import Cert_HTTPS_server
-
 
 def b64encode(data):
     if isinstance(data, str):

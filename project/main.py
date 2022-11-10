@@ -24,7 +24,7 @@ def main():
     cha_th = server_thread(cha_http_server, args=("0.0.0.0", 5002))
     for d in args.domain:
         dns_server.zone_add_A(d, args.record)
-    dns_server.server_run()
+    dns_server.start_server()
     acme_client = ACME_client(args.dir, dns_server)
     if not acme_client:
         print("ACME Client failed")
@@ -40,6 +40,7 @@ def main():
     https_th = server_thread(cert_https_server, args=("0.0.0.0", 5001, "privatekey.pem", "certificate.pem"))
     shut_th.join()
     https_th.join()
+    cha_th.join()
     os._exit(0)
 
 if __name__ == "__main__":
