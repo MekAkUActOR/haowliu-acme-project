@@ -26,8 +26,8 @@ class ACME_client():
         self.sign_alg = DSS.new(self.key, "fips-186-3")
         self.client_s = requests.Session()
         self.jose_s = requests.Session()
-        self.client_s.verify = 'pebble.minica.pem'
-        self.jose_s.verify = 'pebble.minica.pem'
+        # self.client_s.verify = 'pebble.minica.pem'
+        # self.jose_s.verify = 'pebble.minica.pem'
 
         self.client_s.headers.update({"User-Agent": "ACME_Project"})
         self.client_s.mount('https://', HTTPAdapter(max_retries=0))
