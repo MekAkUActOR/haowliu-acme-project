@@ -23,7 +23,7 @@ def main():
     cha_http_server = Cha_HTTP_server()
     cha_th = server_thread(cha_http_server, args=("0.0.0.0", 5002))
     for d in args.domain:
-        dns_server.zone_add_A(d, args.record)
+        dns_server.update_resolver(d, args.record, "A")
     dns_server.start_server()
     acme_client = ACME_client(args.dir, dns_server)
     if not acme_client:

@@ -147,7 +147,7 @@ class ACME_client():
                 key_auth = self.create_key_auth((cha["token"]))
                 if auth_scheme == "dns01" and cha["type"] == "dns-01":
                     key_auth = b64encode(SHA256.new(str.encode(key_auth, encoding="ascii")).digest())
-                    self.dns_server.zone_add_TXT("_acme-challenge.{}".format(jose_request_obj["identifier"]["value"]), key_auth)
+                    self.dns_server.update_resolver("_acme-challenge.{}".format(jose_request_obj["identifier"]["value"]), key_auth, "TXT")
                     return cha
                 elif auth_scheme == "http01" and cha["type"] == "http-01":
                     cha_server.reg_cha(cha["token"], key_auth)
