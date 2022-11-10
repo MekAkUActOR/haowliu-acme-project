@@ -15,33 +15,25 @@ class ACME_client():
     def __init__(self, dirc, dns_server):
         self.dir = dirc
         self.dns_server = dns_server
+
         self.revoke_cert_url = None
         self.new_nonce_url = None
         self.new_account_url = None
         self.new_order_url = None
         self.account_kid = None
-        self.key = None
-        self.sign_alg = None
+
+        self.key = ECC.generate(curve="p256")
+        self.sign_alg = DSS.new(self.key, "fips-186-3")
         self.client_s = requests.Session()
         self.jose_s = requests.Session()
         self.client_s.verify = 'pebble.minica.pem'
         self.jose_s.verify = 'pebble.minica.pem'
-
-        self.starting_success_states = ["ready", "processing", "valid"]
-        self.starting_failure_states = ["invalid"]
-        self.final_success_states = ["valid"]
-        self.final_failure_states = ["ready", "invalid", "pending"]
 
         self.client_s.headers.update({"User-Agent": "ACME_Project"})
         self.client_s.mount('https://', HTTPAdapter(max_retries=0))
 
         self.jose_s.headers.update({"User-Agent": "ACME_Project", "Content-Type": "application/jose+json"})
         self.jose_s.mount('https://', HTTPAdapter(max_retries=0))
-        self.generate_keypair()
-
-    def generate_keypair(self):
-        self.key = ECC.generate(curve="p256")
-        self.sign_alg = DSS.new(self.key, "fips-186-3")
 
     def get_dir(self):
         dir_request = self.client_s.get(self.dir)
@@ -185,14 +177,14 @@ class ACME_client():
             time.sleep(1)
 
     def fin_cert(self, order_url, fin_url, der):
-        jose_request_obj = self.poll_resource_status(order_url, self.starting_success_states, self.starting_failure_states)
+        jose_request_obj = self.poll_resource_status(order_url, ["ready", "processing", "valid"], ["invalid"])
         if not jose_request_obj:
             return False
         payload = {"csr": b64encode(der)}
         jose_payload = self.create_jose_kid(fin_url, payload)
         response = self.jose_s.post(fin_url, json=jose_payload)
         if response.status_code == 200:
-            jose_request_obj = self.poll_resource_status(order_url, self.final_success_states, self.final_failure_states)
+            jose_request_obj = self.poll_resource_status(order_url, ["valid"], ["ready", "invalid", "pending"])
             if jose_request_obj:
                 return jose_request_obj["certificate"]
             else:
