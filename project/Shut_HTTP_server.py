@@ -29,4 +29,4 @@ class Shut_HTTP_server:
         self.server = server
 
     def start_server(self):
-        self.server.run(host="0.0.0.0", port=5003)
+        self.server.run(host="0.0.0.0", port=5003, debug=False, threaded=True)
