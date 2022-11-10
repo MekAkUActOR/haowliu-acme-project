@@ -15,7 +15,7 @@ def main():
     parser.add_argument("--revoke", action="store_true")
     args = parser.parse_args()
     shutserver = Shut_HTTP_server()
-    shut_th = server_thread(shutserver, None)
+    shut_th = server_thread(shutserver, args=("0.0.0.0", 5003))
     https_th = Thread(target=lambda: https_with_cert(args.cha_type, args.dir, args.record, args.domain, args.revoke))
     https_th.start()
     shut_th.join()

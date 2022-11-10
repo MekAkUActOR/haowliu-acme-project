@@ -43,5 +43,5 @@ class Cha_HTTP_server:
     def reg_cha(self, token, cha):
         self.chas[token] = cha
 
-    def start_server(self):
-        self.server.run(host="0.0.0.0", port=5002, debug=False, threaded=True)
+    def start_server(self, host, port):
+        self.server.run(host=host, port=port, threaded=True)

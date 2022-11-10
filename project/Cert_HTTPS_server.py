@@ -26,5 +26,5 @@ class Cert_HTTPS_server:
 
         self.server = server
 
-    def start_server(self, key, cert):
-        self.server.run(host="0.0.0.0", port=5001, ssl_context=(cert, key), debug=False, threaded=True)
+    def start_server(self, host, port, key, cert):
+        self.server.run(host=host, port=port, ssl_context=(cert, key), threaded=True)
