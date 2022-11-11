@@ -133,9 +133,12 @@ class ACME_client():
             else:
                 print("Auth url invalid")
                 return False
-        return vali_urls
+    #     return vali_urls
+    #
+    # def resp_cha(self, vali_urls):
+        if not vali_urls:
+            return False
 
-    def resp_cha(self, vali_urls):
         for url in vali_urls:
             body = self.package_payload(url, {})
             resp = self.client_s.post(url, json=body, headers=jose_header)

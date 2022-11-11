@@ -62,20 +62,19 @@ def cert_manage(acme_client, cha_http_server, dns_server, args):
     if not cert_order:
         print("Certificate issuance failed")
         return False
-    fin_url = cert_order["finalize"]
 
     # Identifier authorization
-    vali_urls = acme_client.iden_auth(cert_order["authorizations"], args.cha_type, cha_http_server, dns_server)
-    if not vali_urls:
+    # vali_urls = acme_client.iden_auth(cert_order["authorizations"], args.cha_type, cha_http_server, dns_server)
+    if not acme_client.iden_auth(cert_order["authorizations"], args.cha_type, cha_http_server, dns_server):
         print("Identifier authorization failed")
         return False
-    if not acme_client.resp_cha(vali_urls):
-        print("Responding to challenge failed")
-        return False
+    # if not acme_client.resp_cha(vali_urls):
+    #     print("Responding to challenge failed")
+    #     return False
 
     # Download certificate
     key, csr, der = gen_csr_and_key(args.domain)
-    cert_url = acme_client.fin_order(order_url, fin_url, der)
+    cert_url = acme_client.fin_order(order_url, cert_order["finalize"], der)
     if not cert_url:
         print("Finalize order failed")
         return False
