@@ -15,7 +15,7 @@ def b64encode(data):
     return b64d
 
 
-def hash(data, encoding):
+def hash_encode(data, encoding):
     encode = str.encode(data, encoding=encoding)
     hdata = SHA256.new(encode)
     return hdata
