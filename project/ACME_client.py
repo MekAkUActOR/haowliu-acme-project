@@ -24,8 +24,7 @@ class ACME_client():
     def dir_get(self, dirc):
         resp = self.client_s.get(dirc, headers=client_header)
         if resp.status_code == 200:
-            resp_obj = resp.json()
-            self.dir_obj = resp_obj
+            self.dir_obj = resp.json()
             return self.dir_obj
 
     def get_nonce(self):
@@ -59,12 +58,10 @@ class ACME_client():
             "signature": signature,
         }
 
-        jose_resp = self.client_s.post(self.dir_obj["newAccount"], json=body, headers=jose_header)
-
-        if jose_resp.status_code == 201:
-            jose_resp_obj = jose_resp.json()
-            self.account_kid = jose_resp.headers["Location"]
-            return jose_resp_obj
+        resp = self.client_s.post(self.dir_obj["newAccount"], json=body, headers=jose_header)
+        if resp.status_code == 201:
+            self.account_kid = resp.headers["Location"]
+            return resp.json()
 
     def package_payload(self, url, payload):
         protected = {
@@ -100,8 +97,7 @@ class ACME_client():
 
         resp = self.client_s.post(self.dir_obj["newOrder"], json=body, headers=jose_header)
         if resp.status_code == 201:
-            order_obj = resp.json()
-            return order_obj, resp.headers["Location"]
+            return resp.json(), resp.headers["Location"]
 
     def iden_auth(self, auth_urls, cha_type, cha_server, dns_server):
         key = {
