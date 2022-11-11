@@ -128,16 +128,17 @@ class ACME_client():
                             dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]),
                                                        key_auth, "TXT")
                             vali_urls.append(cha["url"])
-                            break
                         elif cha_type == "http01" and cha["type"] == "http-01":
                             cha_server.reg_cha(cha["token"], key_auth)
                             vali_urls.append(cha["url"])
-                            break
                         else:
+                            print("No corresponding type")
                             return False
                 else:
+                    print("Empty challenge")
                     return False
             else:
+                print("Auth url invalid")
                 return False
         return vali_urls
         #
