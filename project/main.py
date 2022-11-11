@@ -1,7 +1,6 @@
 import argparse
 import os
 import requests
-from requests.adapters import HTTPAdapter
 
 from utils import cert_manage, server_thread
 from Shut_HTTP_server import Shut_HTTP_server
@@ -33,7 +32,6 @@ def main():
     # Start ACME client
     s = requests.Session()
     s.verify = 'pebble.minica.pem'
-    # s.mount('https://', HTTPAdapter(max_retries=0))
     acme_client = ACME_client(s)
     if not acme_client:
         print("ACME Client launch failed")
