@@ -36,8 +36,9 @@ def main():
     shut_th = server_thread(shutserver, args=("0.0.0.0", 5003))
     cert_https_server = Cert_HTTPS_server()
     https_th = server_thread(cert_https_server, args=("0.0.0.0", 5001, "privatekey.pem", "certificate.pem"))
-    shut_th.join()
     https_th.join()
+    shut_th.join()
+    dns_server.stop_server()
     cha_th.join()
     os._exit(0)
 
