@@ -12,7 +12,4 @@ class Cert_HTTPS_server:
         self.server = server
 
     def start_server(self, host, port, key, cert):
-        try:
-            self.server.run(host=host, port=port, ssl_context=(cert, key), threaded=True)
-        except:
-            print("Local Certificate does not exist.")
+        self.server.run(host=host, port=port, ssl_context=(cert, key), threaded=True)
