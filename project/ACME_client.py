@@ -18,10 +18,9 @@ class ACME_client():
         self.key = ECC.generate(curve="p256")
         self.sign_alg = DSS.new(self.key, "fips-186-3")
         self.client_s = requests.Session()
+        self.client_s.verify = 'pebble.minica.pem'
         self.client_s.headers.update({"User-Agent": "ACME_Project ver1.0"})
         self.client_s.mount('https://', HTTPAdapter(max_retries=0))
-
-        # self.client_s.verify = 'pebble.minica.pem'
 
     def get_dir(self, dirc):
         resp = self.client_s.get(dirc)
