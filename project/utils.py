@@ -46,7 +46,7 @@ def gen_csr_and_key(domains):
 
 def cert_manage(acme_client, cha_http_server, dns_server, args):
     # Get resources
-    dir_obj = acme_client.get_dir(args.dir)
+    dir_obj = acme_client.dir_get(args.dir)
     if not dir_obj:
         print("Get resources failed")
         return False

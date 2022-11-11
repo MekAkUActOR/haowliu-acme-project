@@ -21,7 +21,7 @@ class ACME_client():
 
         self.client_s = client_s
 
-    def get_dir(self, dirc):
+    def dir_get(self, dirc):
         resp = self.client_s.get(dirc, headers=client_header)
         if resp.status_code == 200:
             resp_obj = resp.json()
