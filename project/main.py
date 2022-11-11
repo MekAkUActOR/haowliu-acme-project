@@ -55,7 +55,7 @@ def main():
 
     # End process when "/shutdown"
     shut_th.join()
-    dns_server.stop_server()
+    # dns_server.stop_server()
     os._exit(0)
 
 
