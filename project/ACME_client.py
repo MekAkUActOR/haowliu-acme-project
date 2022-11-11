@@ -116,48 +116,29 @@ class ACME_client():
 
         vali_urls = []
         for url in auth_urls:
-            body = self.package_payload(url, payload)
-            resp = self.client_s.post(url, json=body, headers=jose_header)
-            if resp.status_code == 200:
-                resp_obj = resp.json()
-                if resp_obj["challenges"] != []:
-                    for cha in resp_obj["challenges"]:
-                        key_auth = "{}.{}".format(cha["token"], hash_value)
-                        if cha_type == "dns01" and cha["type"] == "dns-01":
-                            key_auth = b64encode(hash(key_auth, "ascii").digest())
-                            dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]),
-                                                       key_auth, "TXT")
-                            vali_urls.append(cha["url"])
-                            break
-                        elif cha_type == "http01" and cha["type"] == "http-01":
-                            cha_server.reg_cha(cha["token"], key_auth)
-                            vali_urls.append(cha["url"])
-                            break
-                else:
-                    print("Empty challenge")
-                    return False
-            else:
-                print("Auth url invalid")
+            chall = self.get_key_auth(url, payload, hash_value, cha_type, cha_server, dns_server)
+            if not chall:
                 return False
+            else:
+                vali_urls.append(chall["url"])
         return vali_urls
-        #
-        #
-        #
-        # body = self.package_payload(auth_url, payload)
-        # resp = self.client_s.post(auth_url, json=body, headers=jose_header)
-        # if resp.status_code == 200:
-        #     resp_obj = resp.json()
-        #     for cha in resp_obj["challenges"]:
-        #         key_auth = "{}.{}".format(cha["token"], hash_value)
-        #         if cha_type == "dns01" and cha["type"] == "dns-01":
-        #             key_auth = b64encode(hash(key_auth, "ascii").digest())
-        #             dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]), key_auth, "TXT")
-        #             return cha
-        #         elif cha_type == "http01" and cha["type"] == "http-01":
-        #             cha_server.reg_cha(cha["token"], key_auth)
-        #             return cha
-        # else:
-        #     return False
+
+    def get_key_auth(self, auth_url, payload, hash_value, cha_type, cha_server, dns_server):
+        body = self.package_payload(auth_url, payload)
+        resp = self.client_s.post(auth_url, json=body, headers=jose_header)
+        if resp.status_code == 200:
+            resp_obj = resp.json()
+            for cha in resp_obj["challenges"]:
+                key_auth = "{}.{}".format(cha["token"], hash_value)
+                if cha_type == "dns01" and cha["type"] == "dns-01":
+                    key_auth = b64encode(hash(key_auth, "ascii").digest())
+                    dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]), key_auth, "TXT")
+                    return cha
+                elif cha_type == "http01" and cha["type"] == "http-01":
+                    cha_server.reg_cha(cha["token"], key_auth)
+                    return cha
+        else:
+            return False
 
     def resp_cha(self, vali_urls):
         payload = {}
