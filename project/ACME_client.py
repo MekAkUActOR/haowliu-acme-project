@@ -15,7 +15,7 @@ jose_header = {"User-Agent": "ACME_Project ver1.0", "Content-Type": "application
 class ACME_client():
     def __init__(self):
         self.dir_obj = {}
-        self.acc_kid = None
+        self.account_kid = None
 
         self.client_s = requests.Session()
         self.client_s.verify = 'pebble.minica.pem'
@@ -57,12 +57,12 @@ class ACME_client():
         hash_value = hash("{}.{}".format(encoded_header, encoded_payload), "ascii")
         signature = b64encode(self.sign_alg.sign(hash_value))
 
-        jose_payload = {
+        body = {
             "protected": encoded_header,
             "payload": encoded_payload,
             "signature": signature,
         }
-        jose_resp = self.client_s.post(self.dir_obj["newAccount"], json=jose_payload, headers=jose_header)
+        jose_resp = self.client_s.post(self.dir_obj["newAccount"], json=body, headers=jose_header)
 
         if jose_resp.status_code == 201:
             jose_resp_obj = jose_resp.json()
@@ -102,16 +102,14 @@ class ACME_client():
             "signature": signature,
         }
 
-    def issue_cert(self, domains):
-        begin = datetime.datetime.now(datetime.timezone.utc)
-        duration = datetime.timedelta(days=365)
+    def issue_cert(self, domains, begin = datetime.datetime.now(datetime.timezone.utc), duration = datetime.timedelta(days=365)):
         payload = {
-            "identifiers"   :   [{"type":"dns","value":domain} for domain in domains],
-            "notBefore"     :   begin.isoformat(),
-            "notAfter"      :   (begin + duration).isoformat(),
+            "identifiers": [{"type":"dns","value":domain} for domain in domains],
+            "notBefore": begin.isoformat(),
+            "notAfter": (begin + duration).isoformat(),
         }
-        jose_payload = self.package_payload(self.dir_obj["newOrder"], payload)
-        resp = self.client_s.post(self.dir_obj["newOrder"], json=jose_payload, headers=jose_header)
+        body = self.package_payload(self.dir_obj["newOrder"], payload)
+        resp = self.client_s.post(self.dir_obj["newOrder"], json=body, headers=jose_header)
         if resp.status_code == 201:
             order_obj = resp.json()
             return order_obj, resp.headers["Location"]
