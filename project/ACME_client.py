@@ -12,18 +12,8 @@ from utils import b64encode, hash
 
 class ACME_client():
     def __init__(self):
-        # self.new_nonce_url = None
-        # self.new_account_url = None
-        # self.new_order_url = None
-        # self.revoke_cert_url = None
-        # self.account_kid = None
-        self.dir_obj = {
-            "newNonce": None,
-            "newAccount": None,
-            "newOrder": None,
-            "revokeCert": None
-        }
-        self.account_kid = None
+        self.dir_obj = {}
+        self.acc_kid = None
 
         self.key = ECC.generate(curve="p256")
         self.sign_alg = DSS.new(self.key, "fips-186-3")
@@ -37,22 +27,19 @@ class ACME_client():
         # self.jose_s.verify = 'pebble.minica.pem'
 
     def get_dir(self, dirc):
-        request_dir = self.client_s.get(dirc)
-        if request_dir.status_code == 200:
-            jose_request_obj = request_dir.json()
-            self.dir_obj["newNonce"] = jose_request_obj["newNonce"]
-            self.dir_obj["newAccount"] = jose_request_obj["newAccount"]
-            self.dir_obj["newOrder"] = jose_request_obj["newOrder"]
-            self.dir_obj["revokeCert"] = jose_request_obj["revokeCert"]
-            return jose_request_obj
+        resp = self.client_s.get(dirc)
+        if resp.status_code == 200:
+            resp_obj = resp.json()
+            self.dir_obj = resp_obj
+            return self.dir_obj
 
     def get_nonce(self):
         if self.dir_obj["newNonce"] == None:
-            return
-        request = self.client_s.get(self.dir_obj["newNonce"])
-        if request.status_code == 200 or request.status_code == 204:
-            next_nonce = request.headers["Replay-Nonce"]
-            return next_nonce
+            return False
+        resp = self.client_s.get(self.dir_obj["newNonce"])
+        if resp.status_code == 200 or resp.status_code == 204:
+            new_nonce = resp.headers["Replay-Nonce"]
+            return new_nonce
 
     def create_account(self):
         payload = {"termsOfServiceAgreed": True}
