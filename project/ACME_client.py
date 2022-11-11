@@ -1,9 +1,6 @@
 import json
 import datetime
 import time
-
-import requests
-from requests.adapters import HTTPAdapter
 from Crypto.PublicKey import ECC
 from Crypto.Signature import DSS
 
@@ -16,7 +13,8 @@ class ACME_client():
     def __init__(self, client_s):
         self.dir_obj = {}
         self.account_kid = None
-        self.key = None
+        self.key_x = None
+        self.key_y = None
         self.sign_alg = None
         self.client_s = client_s
 
@@ -36,16 +34,18 @@ class ACME_client():
             return new_nonce
 
     def create_account(self):
-        self.key = ECC.generate(curve="p256")
-        self.sign_alg = DSS.new(self.key, "fips-186-3")
+        keypair = ECC.generate(curve="p256")
+        self.key_x = keypair.pointQ.x
+        self.key_y = keypair.pointQ.y
+        self.sign_alg = DSS.new(keypair, "fips-186-3")
 
         protected = {}
         protected["alg"] = "ES256"
         protected["jwk"] = {
             "crv": "P-256",
             "kty": "EC",
-            "x": b64encode(self.key.pointQ.x.to_bytes()),
-            "y": b64encode(self.key.pointQ.y.to_bytes()),
+            "x": b64encode(self.key_x.to_bytes()),
+            "y": b64encode(self.key_y.to_bytes()),
         }
         protected["nonce"] = self.get_nonce()
         protected["url"] = self.dir_obj["newAccount"]
@@ -104,40 +104,78 @@ class ACME_client():
             order_obj = resp.json()
             return order_obj, resp.headers["Location"]
 
-    def iden_auth(self, auth_url, cha_type, cha_server, dns_server):
+    def iden_auth(self, auth_urls, cha_type, cha_server, dns_server):
         payload = ""
         key = {
             "crv": "P-256",
             "kty": "EC",
-            "x": b64encode(self.key.pointQ.x.to_bytes()),
-            "y": b64encode(self.key.pointQ.y.to_bytes()),
+            "x": b64encode(self.key_x.to_bytes()),
+            "y": b64encode(self.key_y.to_bytes()),
         }
         hash_value = b64encode(hash(json.dumps(key, separators=(',', ':')), "utf-8").digest())
-        body = self.package_payload(auth_url, payload)
-        resp = self.client_s.post(auth_url, json=body, headers=jose_header)
-        if resp.status_code == 200:
-            resp_obj = resp.json()
-            for cha in resp_obj["challenges"]:
-                key_auth = "{}.{}".format(cha["token"], hash_value)
-                if cha_type == "dns01" and cha["type"] == "dns-01":
-                    key_auth = b64encode(hash(key_auth, "ascii").digest())
-                    dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]), key_auth, "TXT")
-                    return cha
-                elif cha_type == "http01" and cha["type"] == "http-01":
-                    cha_server.reg_cha(cha["token"], key_auth)
-                    return cha
-        else:
-            return False
 
-    def resp_cha(self, vali_url):
+        vali_urls = []
+        for url in auth_urls:
+            body = self.package_payload(url, payload)
+            resp = self.client_s.post(url, json=body, headers=jose_header)
+            if resp.status_code == 200:
+                resp_obj = resp.json()
+                if resp_obj["challenges"] != []:
+                    for cha in resp_obj["challenges"]:
+                        key_auth = "{}.{}".format(cha["token"], hash_value)
+                        if cha_type == "dns01" and cha["type"] == "dns-01":
+                            key_auth = b64encode(hash(key_auth, "ascii").digest())
+                            dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]),
+                                                       key_auth, "TXT")
+                            vali_urls.append(cha["url"])
+                            break
+                        elif cha_type == "http01" and cha["type"] == "http-01":
+                            cha_server.reg_cha(cha["token"], key_auth)
+                            vali_urls.append(cha["url"])
+                            break
+                        else:
+                            return False
+                else:
+                    return False
+            else:
+                return False
+        return vali_urls
+        #
+        #
+        #
+        # body = self.package_payload(auth_url, payload)
+        # resp = self.client_s.post(auth_url, json=body, headers=jose_header)
+        # if resp.status_code == 200:
+        #     resp_obj = resp.json()
+        #     for cha in resp_obj["challenges"]:
+        #         key_auth = "{}.{}".format(cha["token"], hash_value)
+        #         if cha_type == "dns01" and cha["type"] == "dns-01":
+        #             key_auth = b64encode(hash(key_auth, "ascii").digest())
+        #             dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]), key_auth, "TXT")
+        #             return cha
+        #         elif cha_type == "http01" and cha["type"] == "http-01":
+        #             cha_server.reg_cha(cha["token"], key_auth)
+        #             return cha
+        # else:
+        #     return False
+
+    def resp_cha(self, vali_urls):
         payload = {}
-        body = self.package_payload(vali_url, payload)
-        resp = self.client_s.post(vali_url, json=body, headers=jose_header)
-        if resp.status_code == 200:
-            resp_obj = resp.json()
-            return resp_obj
-        else:
-            return False
+        for url in vali_urls:
+            body = self.package_payload(url, payload)
+            resp = self.client_s.post(url, json=body, headers=jose_header)
+            if resp.status_code == 200:
+                return True
+            else:
+                return False
+
+        # body = self.package_payload(vali_url, payload)
+        # resp = self.client_s.post(vali_url, json=body, headers=jose_header)
+        # if resp.status_code == 200:
+        #     resp_obj = resp.json()
+        #     return resp_obj
+        # else:
+        #     return False
 
     def poll_resource_status(self, order_url, success_states, failure_states):
         while True:

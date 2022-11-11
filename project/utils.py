@@ -46,8 +46,8 @@ def gen_csr_and_key(domains):
 
 def cert_manage(acme_client, cha_http_server, dns_server, args):
     # Get resources
-    directo = acme_client.get_dir(args.dir)
-    if not directo:
+    dir_obj = acme_client.get_dir(args.dir)
+    if not dir_obj:
         return False
 
     # Account management
@@ -61,17 +61,12 @@ def cert_manage(acme_client, cha_http_server, dns_server, args):
         return False
 
     # Identifier authorization
-    vali_urls = []
     fin_url = cert_order["finalize"]
-    for auth in cert_order["authorizations"]:
-        cert_auth = acme_client.iden_auth(auth, args.cha_type, cha_http_server, dns_server)
-        if not cert_auth:
-            return False
-        vali_urls.append(cert_auth["url"])
-    for url in vali_urls:
-        cert_valid = acme_client.resp_cha(url)
-        if not cert_valid:
-            return False
+    vali_urls = acme_client.iden_auth(cert_order["authorizations"], args.cha_type, cha_http_server, dns_server)
+    if not vali_urls:
+        return False
+    if not acme_client.resp_cha(vali_urls):
+        return False
 
     # Download certificate
     key, csr, der = gen_csr_and_key(args.domain)

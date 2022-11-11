@@ -10,6 +10,7 @@ from DNS_server import DNS_server
 from Cha_HTTP_server import Cha_HTTP_server
 from Cert_HTTPS_server import Cert_HTTPS_server
 
+
 def main():
     parser = argparse.ArgumentParser(description="ACME Project")
     parser.add_argument("cha_type", choices=["dns01", "http01"])
@@ -56,6 +57,7 @@ def main():
     shut_th.join()
     dns_server.stop_server()
     os._exit(0)
+
 
 if __name__ == "__main__":
     main()
