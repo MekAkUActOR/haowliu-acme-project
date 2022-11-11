@@ -1,7 +1,5 @@
 import argparse
 import os
-from threading import Thread
-from flask import Flask, request
 
 from utils import obtain_cert, server_thread
 from Shut_HTTP_server import Shut_HTTP_server

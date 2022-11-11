@@ -1,4 +1,3 @@
-import os
 import base64
 from threading import Thread
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -46,18 +45,24 @@ def gen_csr_and_key(domains):
 
 
 def obtain_cert(acme_client, cha_http_server, dns_server, args):
+    # Get resources
     directo = acme_client.get_dir(args.dir)
     if not directo:
         return False
+
+    # Account management
     account = acme_client.create_account()
     if not account:
         return False
+
+    # Applying for certificate issuance
     cert_order, order_url = acme_client.issue_cert(args.domain)
     if not cert_order:
         return False
+
+    # Identifier authorization
     vali_urls = []
     fin_url = cert_order["finalize"]
-
     for auth in cert_order["authorizations"]:
         cert_auth = acme_client.iden_auth(auth, args.cha_type, cha_http_server, dns_server)
         if not cert_auth:
@@ -68,6 +73,7 @@ def obtain_cert(acme_client, cha_http_server, dns_server, args):
         if not cert_valid:
             return False
 
+    # Download certificate
     key, csr, der = gen_csr_and_key(args.domain)
     cert_url = acme_client.fin_order(order_url, fin_url, der)
     if not cert_url:
@@ -75,7 +81,6 @@ def obtain_cert(acme_client, cha_http_server, dns_server, args):
     dl_cert = acme_client.dl_cert(cert_url)
     if not dl_cert:
         return False
-
     with open("privatekey.pem", "wb") as f:
         f.write(key.private_bytes(
             encoding=serialization.Encoding.PEM,
@@ -85,6 +90,7 @@ def obtain_cert(acme_client, cha_http_server, dns_server, args):
     with open("certificate.pem", "wb") as f:
         f.write(dl_cert)
 
+    # Certificate revocation
     if args.revoke:
         acme_client.revoke_cert(
             x509.load_pem_x509_certificate(dl_cert).public_bytes(

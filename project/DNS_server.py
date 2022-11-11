@@ -1,6 +1,5 @@
 from dnslib import dns as dd
 from dnslib import server as ds
-from threading import Thread
 
 
 class DNS_resolver:

@@ -16,12 +16,12 @@ class ACME_client():
     def __init__(self):
         self.dir_obj = {}
         self.account_kid = None
+        self.key = None
+        self.sign_alg = None
 
         self.client_s = requests.Session()
         self.client_s.verify = 'pebble.minica.pem'
         self.client_s.mount('https://', HTTPAdapter(max_retries=0))
-        self.key = ECC.generate(curve="p256")
-        self.sign_alg = DSS.new(self.key, "fips-186-3")
 
     def get_dir(self, dirc):
         resp = self.client_s.get(dirc, headers=client_header)
@@ -39,7 +39,8 @@ class ACME_client():
             return new_nonce
 
     def create_account(self):
-        payload = {"termsOfServiceAgreed": True}
+        self.key = ECC.generate(curve="p256")
+        self.sign_alg = DSS.new(self.key, "fips-186-3")
 
         protected = {}
         protected["alg"] = "ES256"
@@ -51,9 +52,11 @@ class ACME_client():
         }
         protected["nonce"] = self.get_nonce()
         protected["url"] = self.dir_obj["newAccount"]
-
         encoded_header = b64encode(json.dumps(protected))
+
+        payload = {"termsOfServiceAgreed": True}
         encoded_payload = b64encode(json.dumps(payload))
+
         hash_value = hash("{}.{}".format(encoded_header, encoded_payload), "ascii")
         signature = b64encode(self.sign_alg.sign(hash_value))
 
@@ -85,6 +88,7 @@ class ACME_client():
             encoded_payload = b64encode(json.dumps(payload))
             hash_value = hash("{}.{}".format(encoded_protected, encoded_payload), "ascii")
         signature = b64encode(self.sign_alg.sign(hash_value))
+
         return {
             "protected": encoded_protected,
             "payload": encoded_payload,
