@@ -105,17 +105,17 @@ class ACME_client():
 
     def iden_auth(self, auth_url, cha_type, cha_server, dns_server):
         payload = ""
+        key = {
+            "crv": "P-256",
+            "kty": "EC",
+            "x": b64encode(self.key.pointQ.x.to_bytes()),
+            "y": b64encode(self.key.pointQ.y.to_bytes()),
+        }
+        hash_value = b64encode(hash(json.dumps(key, separators=(',', ':')), "utf-8").digest())
         body = self.package_payload(auth_url, payload)
         resp = self.client_s.post(auth_url, json=body, headers=jose_header)
         if resp.status_code == 200:
             resp_obj = resp.json()
-            key = {
-                "crv": "P-256",
-                "kty": "EC",
-                "x": b64encode(self.key.pointQ.x.to_bytes()),
-                "y": b64encode(self.key.pointQ.y.to_bytes()),
-            }
-            hash_value = b64encode(hash(json.dumps(key, separators=(',', ':')), "utf-8").digest())
             for cha in resp_obj["challenges"]:
                 key_auth = "{}.{}".format(cha["token"], hash_value)
                 if cha_type == "dns01" and cha["type"] == "dns-01":
@@ -125,14 +125,18 @@ class ACME_client():
                 elif cha_type == "http01" and cha["type"] == "http-01":
                     cha_server.reg_cha(cha["token"], key_auth)
                     return cha
+        else:
+            return False
 
     def resp_cha(self, vali_url):
         payload = {}
         body = self.package_payload(vali_url, payload)
         resp = self.client_s.post(vali_url, json=body, headers=jose_header)
         if resp.status_code == 200:
-            jose_request_obj = resp.json()
-            return jose_request_obj
+            resp_obj = resp.json()
+            return resp_obj
+        else:
+            return False
 
     def poll_resource_status(self, order_url, success_states, failure_states):
         while True:
@@ -147,7 +151,7 @@ class ACME_client():
                     return False
             time.sleep(1)
 
-    def fin_cert(self, order_url, fin_url, der):
+    def fin_order(self, order_url, fin_url, der):
         resp_obj = self.poll_resource_status(order_url, ["ready", "processing", "valid"], ["invalid"])
         if not resp_obj:
             return False

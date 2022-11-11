@@ -57,6 +57,7 @@ def obtain_cert(acme_client, cha_http_server, dns_server, args):
         return False
     vali_urls = []
     fin_url = cert_order["finalize"]
+
     for auth in cert_order["authorizations"]:
         cert_auth = acme_client.iden_auth(auth, args.cha_type, cha_http_server, dns_server)
         if not cert_auth:
@@ -66,8 +67,9 @@ def obtain_cert(acme_client, cha_http_server, dns_server, args):
         cert_valid = acme_client.resp_cha(url)
         if not cert_valid:
             return False
+
     key, csr, der = gen_csr_and_key(args.domain)
-    cert_url = acme_client.fin_cert(order_url, fin_url, der)
+    cert_url = acme_client.fin_order(order_url, fin_url, der)
     if not cert_url:
         return False
     dl_cert = acme_client.dl_cert(cert_url)
