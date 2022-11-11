@@ -146,9 +146,10 @@ class ACME_client():
             body = self.package_payload(url, payload)
             resp = self.client_s.post(url, json=body, headers=jose_header)
             if resp.status_code == 200:
-                return True
+                pass
             else:
                 return False
+        return True
 
         # body = self.package_payload(vali_url, payload)
         # resp = self.client_s.post(vali_url, json=body, headers=jose_header)
