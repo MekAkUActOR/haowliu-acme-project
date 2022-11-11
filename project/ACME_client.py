@@ -9,21 +9,22 @@ from Crypto.Signature import DSS
 
 from utils import b64encode, hash
 
+client_header = {"User-Agent": "ACME_Project ver1.0"}
+jose_header = {"User-Agent": "ACME_Project ver1.0", "Content-Type": "application/jose+json"}
 
 class ACME_client():
     def __init__(self):
         self.dir_obj = {}
         self.acc_kid = None
 
-        self.key = ECC.generate(curve="p256")
-        self.sign_alg = DSS.new(self.key, "fips-186-3")
         self.client_s = requests.Session()
         self.client_s.verify = 'pebble.minica.pem'
-        self.client_s.headers.update({"User-Agent": "ACME_Project ver1.0"})
         self.client_s.mount('https://', HTTPAdapter(max_retries=0))
+        self.key = ECC.generate(curve="p256")
+        self.sign_alg = DSS.new(self.key, "fips-186-3")
 
     def get_dir(self, dirc):
-        resp = self.client_s.get(dirc)
+        resp = self.client_s.get(dirc, headers=client_header)
         if resp.status_code == 200:
             resp_obj = resp.json()
             self.dir_obj = resp_obj
@@ -32,7 +33,7 @@ class ACME_client():
     def get_nonce(self):
         if self.dir_obj["newNonce"] == None:
             return False
-        resp = self.client_s.get(self.dir_obj["newNonce"])
+        resp = self.client_s.get(self.dir_obj["newNonce"], headers=client_header)
         if resp.status_code == 200 or resp.status_code == 204:
             new_nonce = resp.headers["Replay-Nonce"]
             return new_nonce
@@ -40,8 +41,7 @@ class ACME_client():
     def create_account(self):
         payload = {"termsOfServiceAgreed": True}
         jose_payload = self.create_jose_jwk(self.dir_obj["newAccount"], payload)
-        self.client_s.headers.update({"Content-Type": "application/jose+json"})
-        jose_request = self.client_s.post(self.dir_obj["newAccount"], json=jose_payload)
+        jose_request = self.client_s.post(self.dir_obj["newAccount"], json=jose_payload, headers=jose_header)
 
         if jose_request.status_code == 201:
             jose_request_obj = jose_request.json()
@@ -111,7 +111,7 @@ class ACME_client():
             "notAfter"      :   (begin + duration).isoformat(),
         }
         jose_payload = self.create_jose_kid(self.dir_obj["newOrder"], payload)
-        response = self.client_s.post(self.dir_obj["newOrder"], json=jose_payload)
+        response = self.client_s.post(self.dir_obj["newOrder"], json=jose_payload, headers=jose_header)
         if response.status_code == 201:
             jose_request_obj = response.json()
             return jose_request_obj, response.headers["Location"]
@@ -119,7 +119,7 @@ class ACME_client():
     def auth_cert(self, auth_url, auth_scheme, cha_server, dns_server):
         payload = ""
         jose_payload = self.create_jose_kid(auth_url, payload)
-        request = self.client_s.post(auth_url, json=jose_payload)
+        request = self.client_s.post(auth_url, json=jose_payload, headers=jose_header)
         if request.status_code == 200:
             jose_request_obj = request.json()
             for cha in jose_request_obj["challenges"]:
@@ -135,7 +135,7 @@ class ACME_client():
     def vali_cert(self, vali_url):
         payload = {}
         jose_payload = self.create_jose_kid(vali_url, payload)
-        response = self.client_s.post(vali_url, json=jose_payload)
+        response = self.client_s.post(vali_url, json=jose_payload, headers=jose_header)
         if response.status_code == 200:
             jose_request_obj = response.json()
             return jose_request_obj
@@ -144,7 +144,7 @@ class ACME_client():
         while True:
             payload = ""
             jose_payload = self.create_jose_kid(order_url, payload)
-            jose_request = self.client_s.post(order_url, payload, json=jose_payload)
+            jose_request = self.client_s.post(order_url, payload, json=jose_payload, headers=jose_header)
             jose_request_obj = jose_request.json()
             if jose_request.status_code == 200:
                 if jose_request_obj["status"] in success_states:
@@ -161,7 +161,7 @@ class ACME_client():
             return False
         payload = {"csr": b64encode(der)}
         jose_payload = self.create_jose_kid(fin_url, payload)
-        response = self.client_s.post(fin_url, json=jose_payload)
+        response = self.client_s.post(fin_url, json=jose_payload, headers=jose_header)
         if response.status_code == 200:
             jose_request_obj = self.poll_resource_status(order_url, ["valid"], ["ready", "invalid", "pending"])
             if jose_request_obj:
@@ -172,14 +172,14 @@ class ACME_client():
     def dl_cert(self, cert_url):
         payload = ""
         jose_payload = self.create_jose_kid(cert_url, payload)
-        response = self.client_s.post(cert_url, json=jose_payload)
+        response = self.client_s.post(cert_url, json=jose_payload, headers=jose_header)
         if response.status_code == 200:
             return response.content
 
     def revoke_cert(self, cert):
         payload = {"certificate": b64encode(cert)}
         jose_payload = self.create_jose_kid(self.dir_obj["revokeCert"], payload)
-        response = self.client_s.post(self.dir_obj["revokeCert"], json=jose_payload)
+        response = self.client_s.post(self.dir_obj["revokeCert"], json=jose_payload, headers=jose_header)
         if response.status_code == 200:
             return response.content
 
