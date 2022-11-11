@@ -12,10 +12,17 @@ from utils import b64encode, hash
 
 class ACME_client():
     def __init__(self):
-        self.revoke_cert_url = None
-        self.new_nonce_url = None
-        self.new_account_url = None
-        self.new_order_url = None
+        # self.new_nonce_url = None
+        # self.new_account_url = None
+        # self.new_order_url = None
+        # self.revoke_cert_url = None
+        # self.account_kid = None
+        self.dir_obj = {
+            "newNonce": None,
+            "newAccount": None,
+            "newOrder": None,
+            "revokeCert": None
+        }
         self.account_kid = None
 
         self.key = ECC.generate(curve="p256")
@@ -30,22 +37,32 @@ class ACME_client():
         # self.jose_s.verify = 'pebble.minica.pem'
 
     def get_dir(self, dirc):
-        dir_request = self.client_s.get(dirc)
-        if dir_request.status_code == 200:
-            jose_request_obj = dir_request.json()
-            self.revoke_cert_url = jose_request_obj["revokeCert"]
-            self.new_nonce_url = jose_request_obj["newNonce"]
-            self.new_account_url = jose_request_obj["newAccount"]
-            self.new_order_url = jose_request_obj["newOrder"]
+        request_dir = self.client_s.get(dirc)
+        if request_dir.status_code == 200:
+            jose_request_obj = request_dir.json()
+            self.dir_obj["newNonce"] = jose_request_obj["newNonce"]
+            self.dir_obj["newAccount"] = jose_request_obj["newAccount"]
+            self.dir_obj["newOrder"] = jose_request_obj["newOrder"]
+            self.dir_obj["revokeCert"] = jose_request_obj["revokeCert"]
             return jose_request_obj
 
     def get_nonce(self):
-        if self.new_nonce_url == None:
+        if self.dir_obj["newNonce"] == None:
             return
-        request = self.client_s.get(self.new_nonce_url)
+        request = self.client_s.get(self.dir_obj["newNonce"])
         if request.status_code == 200 or request.status_code == 204:
-            self.next_nonce = request.headers["Replay-Nonce"]
-            return self.next_nonce
+            next_nonce = request.headers["Replay-Nonce"]
+            return next_nonce
+
+    def create_account(self):
+        payload = {"termsOfServiceAgreed": True}
+        jose_payload = self.create_jose_jwk(self.dir_obj["newAccount"], payload)
+        jose_request = self.jose_s.post(self.dir_obj["newAccount"], json=jose_payload)
+
+        if jose_request.status_code == 201:
+            jose_request_obj = jose_request.json()
+            self.account_kid = jose_request.headers["Location"]
+            return jose_request_obj
 
     def create_key_auth(self, token):
         key = {
@@ -57,16 +74,6 @@ class ACME_client():
         hash_value = b64encode(hash(json.dumps(key, separators=(',',':')), "utf-8").digest())
         key_auth = "{}.{}".format(token, hash_value)
         return key_auth
-
-    def create_account(self):
-        payload = {"termsOfServiceAgreed": True}
-        jose_payload = self.create_jose_jwk(self.new_account_url, payload)
-        jose_request = self.jose_s.post(self.new_account_url, json=jose_payload)
-
-        if jose_request.status_code == 201:
-            jose_request_obj = jose_request.json()
-            self.account_kid = jose_request.headers["Location"]
-            return jose_request_obj
 
     def create_jose_jwk(self, url, payload):
         protected = {}
@@ -119,8 +126,8 @@ class ACME_client():
             "notBefore"     :   begin.isoformat(),
             "notAfter"      :   (begin + duration).isoformat(),
         }
-        jose_payload = self.create_jose_kid(self.new_order_url, payload)
-        response = self.jose_s.post(self.new_order_url, json=jose_payload)
+        jose_payload = self.create_jose_kid(self.dir_obj["newOrder"], payload)
+        response = self.jose_s.post(self.dir_obj["newOrder"], json=jose_payload)
         if response.status_code == 201:
             jose_request_obj = response.json()
             return jose_request_obj, response.headers["Location"]
@@ -187,8 +194,8 @@ class ACME_client():
 
     def revoke_cert(self, cert):
         payload = {"certificate": b64encode(cert)}
-        jose_payload = self.create_jose_kid(self.revoke_cert_url, payload)
-        response = self.jose_s.post(self.revoke_cert_url, json=jose_payload)
+        jose_payload = self.create_jose_kid(self.dir_obj["revokeCert"], payload)
+        response = self.jose_s.post(self.dir_obj["revokeCert"], json=jose_payload)
         if response.status_code == 200:
             return response.content
 
