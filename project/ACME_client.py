@@ -69,17 +69,6 @@ class ACME_client():
             self.account_kid = jose_resp.headers["Location"]
             return jose_resp_obj
 
-    def create_key_auth(self, token):
-        key = {
-            "crv": "P-256",
-            "kty": "EC",
-            "x": b64encode(self.key.pointQ.x.to_bytes()),
-            "y": b64encode(self.key.pointQ.y.to_bytes()),
-        }
-        hash_value = b64encode(hash(json.dumps(key, separators=(',',':')), "utf-8").digest())
-        key_auth = "{}.{}".format(token, hash_value)
-        return key_auth
-
     def package_payload(self, url, payload):
         protected = {
             "alg": "ES256",
@@ -114,28 +103,35 @@ class ACME_client():
             order_obj = resp.json()
             return order_obj, resp.headers["Location"]
 
-    def auth_cert(self, auth_url, auth_scheme, cha_server, dns_server):
+    def iden_auth(self, auth_url, cha_type, cha_server, dns_server):
         payload = ""
         body = self.package_payload(auth_url, payload)
         resp = self.client_s.post(auth_url, json=body, headers=jose_header)
         if resp.status_code == 200:
             resp_obj = resp.json()
+            key = {
+                "crv": "P-256",
+                "kty": "EC",
+                "x": b64encode(self.key.pointQ.x.to_bytes()),
+                "y": b64encode(self.key.pointQ.y.to_bytes()),
+            }
+            hash_value = b64encode(hash(json.dumps(key, separators=(',', ':')), "utf-8").digest())
             for cha in resp_obj["challenges"]:
-                key_auth = self.create_key_auth((cha["token"]))
-                if auth_scheme == "dns01" and cha["type"] == "dns-01":
+                key_auth = "{}.{}".format(cha["token"], hash_value)
+                if cha_type == "dns01" and cha["type"] == "dns-01":
                     key_auth = b64encode(hash(key_auth, "ascii").digest())
                     dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]), key_auth, "TXT")
                     return cha
-                elif auth_scheme == "http01" and cha["type"] == "http-01":
+                elif cha_type == "http01" and cha["type"] == "http-01":
                     cha_server.reg_cha(cha["token"], key_auth)
                     return cha
 
-    def vali_cert(self, vali_url):
+    def resp_cha(self, vali_url):
         payload = {}
-        jose_payload = self.package_payload(vali_url, payload)
-        response = self.client_s.post(vali_url, json=jose_payload, headers=jose_header)
-        if response.status_code == 200:
-            jose_request_obj = response.json()
+        body = self.package_payload(vali_url, payload)
+        resp = self.client_s.post(vali_url, json=body, headers=jose_header)
+        if resp.status_code == 200:
+            jose_request_obj = resp.json()
             return jose_request_obj
 
     def poll_resource_status(self, order_url, success_states, failure_states):

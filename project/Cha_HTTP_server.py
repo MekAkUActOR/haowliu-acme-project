@@ -17,8 +17,8 @@ class Cha_HTTP_server:
 
         self.server = server
 
-    def reg_cha(self, token, cha):
-        self.chas[token] = cha
+    def reg_cha(self, token, auth):
+        self.chas[token] = auth
 
     def start_server(self, host, port):
         self.server.run(host=host, port=port, threaded=True)
