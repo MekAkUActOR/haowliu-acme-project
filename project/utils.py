@@ -64,13 +64,9 @@ def cert_manage(acme_client, cha_http_server, dns_server, args):
         return False
 
     # Identifier authorization
-    # vali_urls = acme_client.iden_auth(cert_order["authorizations"], args.cha_type, cha_http_server, dns_server)
     if not acme_client.iden_auth(cert_order["authorizations"], args.cha_type, cha_http_server, dns_server):
         print("Identifier authorization failed")
         return False
-    # if not acme_client.resp_cha(vali_urls):
-    #     print("Responding to challenge failed")
-    #     return False
 
     # Download certificate
     key, csr, der = gen_csr_and_key(args.domain)
@@ -78,18 +74,10 @@ def cert_manage(acme_client, cha_http_server, dns_server, args):
     if not cert_url:
         print("Finalize order failed")
         return False
-    dl_cert = acme_client.dl_cert(cert_url)
+    dl_cert = acme_client.dl_cert(key, cert_url, "privatekey.pem", "certificate.pem")
     if not dl_cert:
         print("Download certificate failed")
         return False
-    with open("privatekey.pem", "wb") as f:
-        f.write(key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        ))
-    with open("certificate.pem", "wb") as f:
-        f.write(dl_cert)
 
     # Certificate revocation
     if args.revoke:

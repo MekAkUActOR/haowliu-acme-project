@@ -3,6 +3,7 @@ import datetime
 import time
 from Crypto.PublicKey import ECC
 from Crypto.Signature import DSS
+from cryptography.hazmat.primitives import serialization
 
 from utils import b64encode, hash_encode
 
@@ -133,12 +134,10 @@ class ACME_client():
             else:
                 print("Auth url invalid")
                 return False
-    #     return vali_urls
-    #
-    # def resp_cha(self, vali_urls):
+
         if not vali_urls:
             return False
-
+        # Responding to Challenges
         for url in vali_urls:
             body = self.package_payload(url, {})
             resp = self.client_s.post(url, json=body, headers=jose_header)
@@ -174,11 +173,20 @@ class ACME_client():
             else:
                 return False
 
-    def dl_cert(self, cert_url):
+    def dl_cert(self, key, cert_url, key_path, cert_path):
         body = self.package_payload(cert_url, "")
         resp = self.client_s.post(cert_url, json=body, headers=jose_header)
         if resp.status_code == 200:
-            return resp.content
+            dl_cert = resp.content
+            with open(key_path, "wb") as f:
+                f.write(key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.TraditionalOpenSSL,
+                    encryption_algorithm=serialization.NoEncryption()
+                ))
+            with open(cert_path, "wb") as f:
+                f.write(dl_cert)
+            return dl_cert
 
     def revoke_cert(self, cert):
         body = self.package_payload(self.dir_obj["revokeCert"], {"certificate": b64encode(cert)})
