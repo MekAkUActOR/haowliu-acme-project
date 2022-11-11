@@ -107,7 +107,6 @@ class ACME_client():
             return order_obj, resp.headers["Location"]
 
     def iden_auth(self, auth_urls, cha_type, cha_server, dns_server):
-        payload = ""
         key = {
             "crv": "P-256",
             "kty": "EC",
@@ -118,7 +117,7 @@ class ACME_client():
 
         vali_urls = []
         for url in auth_urls:
-            body = self.package_payload(url, payload)
+            body = self.package_payload(url, "")
             resp = self.client_s.post(url, json=body, headers=jose_header)
             if resp.status_code == 200:
                 resp_obj = resp.json()
@@ -142,9 +141,8 @@ class ACME_client():
         return vali_urls
 
     def resp_cha(self, vali_urls):
-        payload = {}
         for url in vali_urls:
-            body = self.package_payload(url, payload)
+            body = self.package_payload(url, {})
             resp = self.client_s.post(url, json=body, headers=jose_header)
             if resp.status_code == 200:
                 pass
@@ -152,11 +150,10 @@ class ACME_client():
                 return False
         return True
 
-    def poll_resource_status(self, order_url, s_states, f_states):
+    def poll_resource_status(self, s_states, f_states, url):
         while True:
-            payload = ""
-            body = self.package_payload(order_url, payload)
-            resp = self.client_s.post(order_url, payload, json=body, headers=jose_header)
+            body = self.package_payload(url, "")
+            resp = self.client_s.post(url, "", json=body, headers=jose_header)
             resp_obj = resp.json()
             if resp.status_code == 200:
                 if resp_obj["status"] in s_states:
@@ -166,30 +163,27 @@ class ACME_client():
             time.sleep(1)
 
     def fin_order(self, order_url, fin_url, der):
-        if not self.poll_resource_status(order_url, ["ready", "processing", "valid"], ["invalid"]):
+        if not self.poll_resource_status(["ready", "processing", "valid"], ["invalid"], order_url):
             return False
 
-        payload = {"csr": b64encode(der)}
-        body = self.package_payload(fin_url, payload)
+        body = self.package_payload(fin_url, {"csr": b64encode(der)})
 
         resp = self.client_s.post(fin_url, json=body, headers=jose_header)
         if resp.status_code == 200:
-            response_obj = self.poll_resource_status(order_url, ["valid"], ["ready", "invalid", "pending"])
+            response_obj = self.poll_resource_status(["valid"], ["ready", "invalid", "pending"], order_url)
             if response_obj:
                 return response_obj["certificate"]
             else:
                 return False
 
     def dl_cert(self, cert_url):
-        payload = ""
-        body = self.package_payload(cert_url, payload)
+        body = self.package_payload(cert_url, "")
         resp = self.client_s.post(cert_url, json=body, headers=jose_header)
         if resp.status_code == 200:
             return resp.content
 
     def revoke_cert(self, cert):
-        payload = {"certificate": b64encode(cert)}
-        body = self.package_payload(self.dir_obj["revokeCert"], payload)
+        body = self.package_payload(self.dir_obj["revokeCert"], {"certificate": b64encode(cert)})
         resp = self.client_s.post(self.dir_obj["revokeCert"], json=body, headers=jose_header)
         if resp.status_code == 200:
             return resp.content
