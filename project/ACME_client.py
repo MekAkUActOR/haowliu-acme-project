@@ -102,7 +102,7 @@ class ACME_client():
             "signature": signature,
         }
 
-    def issue_cert(self, domains, begin = datetime.datetime.now(datetime.timezone.utc), duration = datetime.timedelta(days=365)):
+    def issue_cert(self, domains, begin=datetime.datetime.now(datetime.timezone.utc), duration=datetime.timedelta(days=365)):
         payload = {
             "identifiers": [{"type":"dns","value":domain} for domain in domains],
             "notBefore": begin.isoformat(),
@@ -116,11 +116,11 @@ class ACME_client():
 
     def auth_cert(self, auth_url, auth_scheme, cha_server, dns_server):
         payload = ""
-        jose_payload = self.package_payload(auth_url, payload)
-        request = self.client_s.post(auth_url, json=jose_payload, headers=jose_header)
-        if request.status_code == 200:
-            jose_request_obj = request.json()
-            for cha in jose_request_obj["challenges"]:
+        body = self.package_payload(auth_url, payload)
+        resp = self.client_s.post(auth_url, json=body, headers=jose_header)
+        if resp.status_code == 200:
+            resp_obj = resp.json()
+            for cha in resp_obj["challenges"]:
                 key_auth = self.create_key_auth((cha["token"]))
                 if auth_scheme == "dns01" and cha["type"] == "dns-01":
                     key_auth = b64encode(hash(key_auth, "ascii").digest())
@@ -141,45 +141,43 @@ class ACME_client():
     def poll_resource_status(self, order_url, success_states, failure_states):
         while True:
             payload = ""
-            jose_payload = self.package_payload(order_url, payload)
-            jose_request = self.client_s.post(order_url, payload, json=jose_payload, headers=jose_header)
-            jose_request_obj = jose_request.json()
-            if jose_request.status_code == 200:
-                if jose_request_obj["status"] in success_states:
-                    print("Resource {} has {} state".format(order_url, jose_request_obj["status"]))
-                    return jose_request_obj
-                elif jose_request_obj["status"] in failure_states:
-                    print("Resource {} has {} state, treated as failure".format(order_url, jose_request_obj["status"]))
+            body = self.package_payload(order_url, payload)
+            resp = self.client_s.post(order_url, payload, json=body, headers=jose_header)
+            resp_obj = resp.json()
+            if resp.status_code == 200:
+                if resp_obj["status"] in success_states:
+                    return resp_obj
+                elif resp_obj["status"] in failure_states:
                     return False
             time.sleep(1)
 
     def fin_cert(self, order_url, fin_url, der):
-        jose_request_obj = self.poll_resource_status(order_url, ["ready", "processing", "valid"], ["invalid"])
-        if not jose_request_obj:
+        resp_obj = self.poll_resource_status(order_url, ["ready", "processing", "valid"], ["invalid"])
+        if not resp_obj:
             return False
         payload = {"csr": b64encode(der)}
-        jose_payload = self.package_payload(fin_url, payload)
-        response = self.client_s.post(fin_url, json=jose_payload, headers=jose_header)
-        if response.status_code == 200:
-            jose_request_obj = self.poll_resource_status(order_url, ["valid"], ["ready", "invalid", "pending"])
-            if jose_request_obj:
-                return jose_request_obj["certificate"]
+        body = self.package_payload(fin_url, payload)
+        resp = self.client_s.post(fin_url, json=body, headers=jose_header)
+        if resp.status_code == 200:
+            response_obj = self.poll_resource_status(order_url, ["valid"], ["ready", "invalid", "pending"])
+            if response_obj:
+                return response_obj["certificate"]
             else:
                 return False
 
     def dl_cert(self, cert_url):
         payload = ""
-        jose_payload = self.package_payload(cert_url, payload)
-        response = self.client_s.post(cert_url, json=jose_payload, headers=jose_header)
-        if response.status_code == 200:
-            return response.content
+        body = self.package_payload(cert_url, payload)
+        resp = self.client_s.post(cert_url, json=body, headers=jose_header)
+        if resp.status_code == 200:
+            return resp.content
 
     def revoke_cert(self, cert):
         payload = {"certificate": b64encode(cert)}
-        jose_payload = self.package_payload(self.dir_obj["revokeCert"], payload)
-        response = self.client_s.post(self.dir_obj["revokeCert"], json=jose_payload, headers=jose_header)
-        if response.status_code == 200:
-            return response.content
+        body = self.package_payload(self.dir_obj["revokeCert"], payload)
+        resp = self.client_s.post(self.dir_obj["revokeCert"], json=body, headers=jose_header)
+        if resp.status_code == 200:
+            return resp.content
 
 
 
