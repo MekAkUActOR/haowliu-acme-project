@@ -25,12 +25,12 @@ def main():
     for d in args.domain:
         dns_server.update_resolver(d, args.record, "A")
     dns_server.start_server()
-    acme_client = ACME_client(args.dir, dns_server)
+    acme_client = ACME_client()
     if not acme_client:
         print("ACME Client failed")
         os._exit(0)
 
-    wrap = obtain_cert(acme_client, cha_http_server, args.cha_type, args.domain, args.revoke)
+    wrap = obtain_cert(acme_client, cha_http_server, dns_server, args)
     if not wrap:
         os._exit(0)
 

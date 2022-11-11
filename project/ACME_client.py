@@ -11,10 +11,7 @@ from utils import b64encode, hash
 
 
 class ACME_client():
-    def __init__(self, dirc, dns_server):
-        self.dir = dirc
-        self.dns_server = dns_server
-
+    def __init__(self):
         self.revoke_cert_url = None
         self.new_nonce_url = None
         self.new_account_url = None
@@ -24,18 +21,16 @@ class ACME_client():
         self.key = ECC.generate(curve="p256")
         self.sign_alg = DSS.new(self.key, "fips-186-3")
         self.client_s = requests.Session()
+        self.client_s.headers.update({"User-Agent": "ACME_Project"})
+        self.client_s.mount('https://', HTTPAdapter(max_retries=0))
         self.jose_s = requests.Session()
+        self.jose_s.headers.update({"User-Agent": "ACME_Project", "Content-Type": "application/jose+json"})
+        self.jose_s.mount('https://', HTTPAdapter(max_retries=0))
         # self.client_s.verify = 'pebble.minica.pem'
         # self.jose_s.verify = 'pebble.minica.pem'
 
-        self.client_s.headers.update({"User-Agent": "ACME_Project"})
-        self.client_s.mount('https://', HTTPAdapter(max_retries=0))
-
-        self.jose_s.headers.update({"User-Agent": "ACME_Project", "Content-Type": "application/jose+json"})
-        self.jose_s.mount('https://', HTTPAdapter(max_retries=0))
-
-    def get_dir(self):
-        dir_request = self.client_s.get(self.dir)
+    def get_dir(self, dirc):
+        dir_request = self.client_s.get(dirc)
         if dir_request.status_code == 200:
             jose_request_obj = dir_request.json()
             self.revoke_cert_url = jose_request_obj["revokeCert"]
@@ -64,9 +59,7 @@ class ACME_client():
         return key_auth
 
     def create_account(self):
-        payload = {
-            "termsOfServiceAgreed" : True,
-        }
+        payload = {"termsOfServiceAgreed": True}
         jose_payload = self.create_jose_jwk(self.new_account_url, payload)
         jose_request = self.jose_s.post(self.new_account_url, json=jose_payload)
 
@@ -132,7 +125,7 @@ class ACME_client():
             jose_request_obj = response.json()
             return jose_request_obj, response.headers["Location"]
 
-    def auth_cert(self, auth_url, auth_scheme, cha_server):
+    def auth_cert(self, auth_url, auth_scheme, cha_server, dns_server):
         payload = ""
         jose_payload = self.create_jose_kid(auth_url, payload)
         request = self.jose_s.post(auth_url, json=jose_payload)
@@ -142,7 +135,7 @@ class ACME_client():
                 key_auth = self.create_key_auth((cha["token"]))
                 if auth_scheme == "dns01" and cha["type"] == "dns-01":
                     key_auth = b64encode(hash(key_auth, "ascii").digest())
-                    self.dns_server.update_resolver("_acme-challenge.{}".format(jose_request_obj["identifier"]["value"]), key_auth, "TXT")
+                    dns_server.update_resolver("_acme-challenge.{}".format(jose_request_obj["identifier"]["value"]), key_auth, "TXT")
                     return cha
                 elif auth_scheme == "http01" and cha["type"] == "http-01":
                     cha_server.reg_cha(cha["token"], key_auth)

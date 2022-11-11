@@ -45,20 +45,20 @@ def gen_csr_and_key(domains):
     return private_key, csr, der
 
 
-def obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke):
-    directo = acme_client.get_dir()
+def obtain_cert(acme_client, cha_http_server, dns_server, args):
+    directo = acme_client.get_dir(args.dir)
     if not directo:
         return False
     account = acme_client.create_account()
     if not account:
         return False
-    cert_order, order_url = acme_client.issue_cert(domain)
+    cert_order, order_url = acme_client.issue_cert(args.domain)
     if not cert_order:
         return False
     vali_urls = []
     fin_url = cert_order["finalize"]
     for auth in cert_order["authorizations"]:
-        cert_auth = acme_client.auth_cert(auth, cha_type, cha_http_server)
+        cert_auth = acme_client.auth_cert(auth, args.cha_type, cha_http_server, dns_server)
         if not cert_auth:
             return False
         vali_urls.append(cert_auth["url"])
@@ -66,7 +66,7 @@ def obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke):
         cert_valid = acme_client.vali_cert(url)
         if not cert_valid:
             return False
-    key, csr, der = gen_csr_and_key(domain)
+    key, csr, der = gen_csr_and_key(args.domain)
     cert_url = acme_client.fin_cert(order_url, fin_url, der)
     if not cert_url:
         return False
@@ -83,7 +83,7 @@ def obtain_cert(acme_client, cha_http_server, cha_type, domain, revoke):
     with open("certificate.pem", "wb") as f:
         f.write(dl_cert)
 
-    if revoke:
+    if args.revoke:
         acme_client.revoke_cert(
             x509.load_pem_x509_certificate(dl_cert).public_bytes(
                 serialization.Encoding.DER)
