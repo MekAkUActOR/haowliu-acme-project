@@ -44,7 +44,7 @@ def gen_csr_and_key(domains):
     return private_key, csr, der
 
 
-def obtain_cert(acme_client, cha_http_server, dns_server, args):
+def cert_manage(acme_client, cha_http_server, dns_server, args):
     # Get resources
     directo = acme_client.get_dir(args.dir)
     if not directo:

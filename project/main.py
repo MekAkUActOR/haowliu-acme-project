@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from utils import obtain_cert, server_thread
+from utils import cert_manage, server_thread
 from Shut_HTTP_server import Shut_HTTP_server
 from ACME_client import ACME_client
 from DNS_server import DNS_server
@@ -17,29 +17,39 @@ def main():
     parser.add_argument("--revoke", action="store_true")
     args = parser.parse_args()
 
+    # Start DNS server
     dns_server = DNS_server()
-    cha_http_server = Cha_HTTP_server()
-    cha_th = server_thread(cha_http_server, args=("0.0.0.0", 5002))
     for d in args.domain:
         dns_server.update_resolver(d, args.record, "A")
     dns_server.start_server()
+
+    # Start challenge http server
+    cha_http_server = Cha_HTTP_server()
+    cha_th = server_thread(cha_http_server, args=("0.0.0.0", 5002))
+
+    # Start ACME client
     acme_client = ACME_client()
     if not acme_client:
-        print("ACME Client failed")
+        print("ACME Client launch failed")
         os._exit(0)
 
-    wrap = obtain_cert(acme_client, cha_http_server, dns_server, args)
+    # Certificate Management
+    wrap = cert_manage(acme_client, cha_http_server, dns_server, args)
     if not wrap:
+        print("Certificate management failed")
         os._exit(0)
 
+    # Start shut http server
     shutserver = Shut_HTTP_server()
     shut_th = server_thread(shutserver, args=("0.0.0.0", 5003))
+
+    # Start https server with certificate
     cert_https_server = Cert_HTTPS_server()
     https_th = server_thread(cert_https_server, args=("0.0.0.0", 5001, "privatekey.pem", "certificate.pem"))
-    https_th.join()
+
+    # End process when "/shutdown"
     shut_th.join()
     dns_server.stop_server()
-    cha_th.join()
     os._exit(0)
 
 if __name__ == "__main__":
