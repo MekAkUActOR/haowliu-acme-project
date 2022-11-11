@@ -49,10 +49,7 @@ class ACME_client():
             "y": b64encode(self.key_y.to_bytes()),
         }, "nonce": self.get_nonce(), "url": self.dir_obj["newAccount"]}
         encoded_header = b64encode(json.dumps(protected))
-
-        payload = {"termsOfServiceAgreed": True}
-        encoded_payload = b64encode(json.dumps(payload))
-
+        encoded_payload = b64encode(json.dumps({"termsOfServiceAgreed": True}))
         hash_value = hash_encode("{}.{}".format(encoded_header, encoded_payload), "ascii")
         signature = b64encode(self.sign_alg.sign(hash_value))
 
@@ -126,8 +123,10 @@ class ACME_client():
                         key_auth = "{}.{}".format(cha["token"], hash_value)
                         if cha_type == "dns01" and cha["type"] == "dns-01":
                             key_auth = b64encode(hash_encode(key_auth, "ascii").digest())
-                            dns_server.update_resolver("_acme-challenge.{}".format(resp_obj["identifier"]["value"]),
-                                                       key_auth, "TXT")
+                            dns_server.update_resolver(
+                                "_acme-challenge.{}".format(resp_obj["identifier"]["value"]),
+                                key_auth, "TXT"
+                            )
                             vali_urls.append(cha["url"])
                         elif cha_type == "http01" and cha["type"] == "http-01":
                             cha_server.reg_cha(cha["token"], key_auth)
@@ -153,7 +152,7 @@ class ACME_client():
     def poll_resource_status(self, s_states, f_states, url):
         while True:
             body = self.package_payload(url, "")
-            resp = self.client_s.post(url, "", json=body, headers=jose_header)
+            resp = self.client_s.post(url, json=body, headers=jose_header)
             resp_obj = resp.json()
             if resp.status_code == 200:
                 if resp_obj["status"] in s_states:
