@@ -33,7 +33,7 @@ def main():
     # Start ACME client
     s = requests.Session()
     s.verify = 'pebble.minica.pem'
-    s.mount('https://', HTTPAdapter(max_retries=0))
+    # s.mount('https://', HTTPAdapter(max_retries=0))
     acme_client = ACME_client(s)
     if not acme_client:
         print("ACME Client launch failed")
