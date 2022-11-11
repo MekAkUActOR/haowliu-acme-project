@@ -13,15 +13,12 @@ client_header = {"User-Agent": "ACME_Project ver1.0"}
 jose_header = {"User-Agent": "ACME_Project ver1.0", "Content-Type": "application/jose+json"}
 
 class ACME_client():
-    def __init__(self):
+    def __init__(self, client_s):
         self.dir_obj = {}
         self.account_kid = None
         self.key = None
         self.sign_alg = None
-
-        self.client_s = requests.Session()
-        self.client_s.verify = 'pebble.minica.pem'
-        self.client_s.mount('https://', HTTPAdapter(max_retries=0))
+        self.client_s = client_s
 
     def get_dir(self, dirc):
         resp = self.client_s.get(dirc, headers=client_header)
