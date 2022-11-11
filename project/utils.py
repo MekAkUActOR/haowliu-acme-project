@@ -48,33 +48,40 @@ def cert_manage(acme_client, cha_http_server, dns_server, args):
     # Get resources
     dir_obj = acme_client.get_dir(args.dir)
     if not dir_obj:
+        print("Get resources failed")
         return False
 
     # Account management
     account = acme_client.create_account()
     if not account:
+        print("Account management failed")
         return False
 
     # Applying for certificate issuance
     cert_order, order_url = acme_client.issue_cert(args.domain)
     if not cert_order:
+        print("Certificate issuance failed")
         return False
+    fin_url = cert_order["finalize"]
 
     # Identifier authorization
-    fin_url = cert_order["finalize"]
     vali_urls = acme_client.iden_auth(cert_order["authorizations"], args.cha_type, cha_http_server, dns_server)
     if not vali_urls:
+        print("Identifier authorization failed")
         return False
     if not acme_client.resp_cha(vali_urls):
+        print("Responding to challenge failed")
         return False
 
     # Download certificate
     key, csr, der = gen_csr_and_key(args.domain)
     cert_url = acme_client.fin_order(order_url, fin_url, der)
     if not cert_url:
+        print("Finalize order failed")
         return False
     dl_cert = acme_client.dl_cert(cert_url)
     if not dl_cert:
+        print("Download certificate failed")
         return False
     with open("privatekey.pem", "wb") as f:
         f.write(key.private_bytes(
